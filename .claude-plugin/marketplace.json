@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Acuris developer plugins for AI coding agents — Claude Code, Cursor, and any client that consumes Anthropic Agent Skills.",
-    "version": "0.2.1"
+    "version": "0.2.2"
   },
   "plugins": [
     {
@@ -25,7 +25,7 @@
         "eudi-wallet",
         "oid4vp"
       ],
-      "version": "0.2.1"
+      "version": "0.2.2"
     }
   ]
 }

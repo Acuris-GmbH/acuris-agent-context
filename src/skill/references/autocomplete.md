@@ -1,5 +1,36 @@
 # Address autocomplete in a React checkout form
 
+## ⚠️ Country coverage for autocomplete is narrower than for validation
+
+**Only 5 countries currently have `/suggest` (autocomplete) wired:**
+
+```ts
+const AUTOCOMPLETE_COUNTRIES = [
+  { code: "usa", label: "United States" },
+  { code: "deu", label: "Germany" },
+  { code: "nld", label: "Netherlands" },
+  { code: "fin", label: "Finland" },
+  { code: "swe", label: "Sweden" },
+];
+```
+
+Validation / geocoding / reverse geocoding work against 200+ ISO-3
+codes. Autocomplete is narrower because each country needs NORM
+columns + indexes built first — a separate engineering step. Other
+countries' `/suggest` calls return `[]` silently, which reads as
+"the product is broken" to the user.
+
+**Use this exact list in any autocomplete country picker.** Don't add
+`fra`, `esp`, `ita`, etc. — they'll appear in the dropdown but
+typing into the input will produce no suggestions. That's the worst
+possible UX.
+
+If you're building a form that *also* validates on submit (a checkout
+flow with `<AcurisAddressInput>` for typing + `<AcurisAddressValidator>`
+for submit), the autocomplete-enabled 5 are still the right set —
+they're a strict subset of the validation-enabled set, so validation
+works for all of them.
+
 ## What autocomplete is — and is not
 
 **Autocomplete is one input** that shows a dropdown of suggestions
