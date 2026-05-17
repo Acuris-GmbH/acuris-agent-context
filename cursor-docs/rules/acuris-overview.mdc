@@ -1,0 +1,72 @@
+---
+description: |
+  Acuris Address Validation & Geocoding API. Use whenever the user is
+  wiring address autocomplete, address validation on form submit,
+  forward or reverse geocoding, batch address cleanup, or migrating
+  from libAddressDoctor / Loqate / Experian QAS / Melissa / Smarty.
+alwaysApply: false
+---
+
+# Acuris Address Validation & Geocoding
+
+Acuris is a commercial address validation, geocoding, reverse-geocoding,
+and autocomplete API at `https://api.acuris-geo.com`. Use the published
+TypeScript SDK rather than hand-rolling HTTP.
+
+## Packages
+
+```bash
+npm install @acuris-geo/av-sdk
+# for React storefronts (Centra, generic):
+npm install @acuris-geo/centra-checkout
+```
+
+## SDK shape
+
+```ts
+import {
+  AcurisClient,
+  validateAddress,
+  geocodeAddress,
+  reverseGeocode,
+  suggestAddress,
+} from "@acuris-geo/av-sdk";
+
+const client = new AcurisClient({ apiKey: process.env.ACURIS_API_KEY });
+```
+
+| Operation       | Function                                  | HTTP                                       |
+| --------------- | ----------------------------------------- | ------------------------------------------ |
+| Validate        | `validateAddress(client, input, opts)`    | `POST /validate`                           |
+| Forward geocode | `geocodeAddress(client, input, opts)`     | `GET /geocode` (string falls back to `/validate`) |
+| Reverse geocode | `reverseGeocode(client, {lat,lng}, opts)` | `GET /reverse`                             |
+| Autocomplete    | `suggestAddress(client, q, opts)`         | `GET /suggest`                             |
+
+## Rules to follow
+
+- **Server-side only.** The API key (`X-Acuris-Key` header) must never
+  reach the browser. From frontend code, call your own proxy route which
+  calls the SDK.
+- **Country is ISO-3 lowercase** (`"usa"`, `"deu"`, `"gbr"`). Map ISO-2
+  inputs at the boundary.
+- **Auth header is `X-Acuris-Key`**, not `Authorization: Bearer`.
+- **Retries are built into the SDK** (5xx/429/network/timeout, exp.
+  backoff, 3 attempts default). Don't add another layer.
+- **Errors are a typed hierarchy** (`AcurisAuthError`,
+  `AcurisValidationError`, `AcurisRateLimitError`, `AcurisNotFoundError`,
+  `AcurisServerError`, `AcurisTimeoutError`, `AcurisNetworkError`).
+  Handle them distinctly.
+- **`accuracy_type` is an open enum.** Treat unknown values as opaque
+  rather than throwing.
+- **One long-lived client per process.** Don't `new AcurisClient(...)`
+  per request.
+
+## Where to find more
+
+If you need the detailed recipe for what you're building, ask for the
+relevant context rule by name:
+
+- `@acuris-autocomplete` — typeahead in a checkout / sign-up form
+- `@acuris-validation`   — validate on form submit
+- `@acuris-migration`    — replace libAddressDoctor / Loqate / Experian
+                            QAS / Melissa / Smarty

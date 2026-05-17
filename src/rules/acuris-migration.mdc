@@ -1,0 +1,78 @@
+---
+description: |
+  Migration recipes from incumbent address-verification vendors
+  (Informatica AddressDoctor, Loqate, Experian QAS, Melissa, Smarty)
+  to Acuris. Pull in manually with @acuris-migration when porting
+  vendor-specific code.
+alwaysApply: false
+---
+
+# Migration to Acuris
+
+## Endpoint cross-reference
+
+| Vendor function                                 | Acuris SDK                                |
+| ----------------------------------------------- | ----------------------------------------- |
+| Informatica AddressDoctor `AD_VerifyAddress`    | `validateAddress`                         |
+| Informatica AddressDoctor `AD_Search`           | `suggestAddress` + `validateAddress`      |
+| Informatica AddressDoctor `AD_Geocode`          | `geocodeAddress`                          |
+| Loqate `Capture/Find` + `Retrieve`              | `suggestAddress` + `validateAddress`      |
+| Loqate `Verify`                                 | `validateAddress`                         |
+| Experian QAS / Aperture `Search` + `Format`     | `validateAddress` (single round-trip)     |
+| Experian QAS `Suggestions`                      | `suggestAddress`                          |
+| Melissa Personator `Verify`                     | `validateAddress`                         |
+| Melissa Global Address Verification             | `validateAddress`                         |
+| Melissa ExpressEntry                            | `suggestAddress`                          |
+| Smarty US Street API                            | `validateAddress` (`country: "usa"`)      |
+| Smarty US Autocomplete Pro API                  | `suggestAddress` (`country: "usa"`)       |
+| Smarty International Street API                 | `validateAddress` (ISO-3 lowercase)       |
+| Smarty US Reverse Geo API                       | `reverseGeocode` (`country: "usa"`)       |
+
+## Status-code mapping
+
+`accuracy_type` (Acuris) + `confidence` collapse the vendor-specific
+status hierarchies:
+
+| Generic bucket          | Vendor equivalent                                      | Acuris condition                                       |
+| ----------------------- | ------------------------------------------------------ | ------------------------------------------------------ |
+| Verified to premise     | QAS `V`, Loqate `V5`, Melissa `AV25`, Smarty `Rooftop` | `accuracy_type ∈ {rooftop, parcel}` AND `confidence ≥ 0.9` |
+| Verified to street      | QAS `P`, Loqate `V4`, Melissa `AV24`, Smarty `Zip9`    | `accuracy_type ∈ {street_interpolated, street_center}` |
+| Verified to locality    | QAS `R`, Melissa `AV23`                                | `accuracy_type ∈ {postcode, locality, locality_centroid}` |
+| No / weak match         | QAS `U`, Loqate `V1`, Melissa `AV12`, Smarty `Unknown` | `accuracy_type === null` or `confidence < 0.4`         |
+| Component corrected     | All vendors flag this distinctly                       | `input_corrected === true`                             |
+
+## Country code normalization
+
+| Vendor format          | Convert to Acuris ISO-3 lowercase           |
+| ---------------------- | ------------------------------------------- |
+| ISO-2 (`"US"`, `"DE"`) | `iso2 → iso3, lowercase` (`"us" → "usa"`)   |
+| ISO-3 uppercase        | `.toLowerCase()`                            |
+| Full name              | Lookup table → ISO-3 lowercase              |
+
+## What doesn't migrate
+
+- **CASS / SERP / DPV / SuiteLink / LACSLink certifications** —
+  USPS / postal-authority certifications. Acuris is rooftop-grade
+  but not certified against these schemes. If the customer needs
+  presort discounts, this migration alone won't suffice.
+- **Vendor-specific stable IDs** (Melissa MAK, Loqate Container,
+  Experian `global_address_key`). Acuris doesn't assign per-address
+  IDs. Switch downstream dedupe to a hash of
+  `(country, standardized.formatted_address)`.
+- **Name / email / phone enrichment** (Personator extras, QAS
+  Authenticate). Acuris is address-only.
+
+## Detailed per-vendor recipes
+
+Each vendor has a worked recipe with before/after code, status-code
+table, and gotchas. Pull in the relevant one:
+
+- Informatica AddressDoctor — see the `migrate-informatica` reference
+- Loqate Capture / Verify — see the `migrate-loqate` reference
+- Experian QAS / Aperture — see the `migrate-experian-qas` reference
+- Melissa Personator / Address Verify — see the `migrate-melissa` reference
+- Smarty US / International — see the `migrate-smarty` reference
+
+> All migration recipes are written against vendor public docs, not
+> against any specific customer codebase. Treat as scaffolds — review
+> the mapping against your actual integration before cutting over.

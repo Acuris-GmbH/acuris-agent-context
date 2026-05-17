@@ -1,0 +1,83 @@
+---
+description: |
+  Acuris address validation on form submit and on the server before
+  persisting. Use whenever editing a route that accepts an address
+  and writes it to a database or to a payment / shipping API.
+alwaysApply: false
+globs: ["**/api/**/{address,validate,checkout,orders,customers}*.{ts,js}", "**/server/**/*{address,checkout}*.{ts,js}", "**/*AddressValidator*.{tsx,jsx}"]
+---
+
+# Acuris address validation
+
+When a server route accepts an address, validate it before persisting:
+
+```ts
+import {
+  AcurisClient,
+  validateAddress,
+  AcurisAuthError,
+  AcurisValidationError,
+  AcurisRateLimitError,
+} from "@acuris-geo/av-sdk";
+
+const client = new AcurisClient({ apiKey: process.env.ACURIS_API_KEY });
+
+const result = await validateAddress(client, input, { country });
+```
+
+Three buckets, decide downstream:
+
+```ts
+function classify(r: { accuracy_type: string | null; confidence: number; input_corrected: boolean }) {
+  if (!r.accuracy_type || r.confidence < 0.4)                 return "reject";
+  if (r.input_corrected || r.confidence < 0.8)                return "confirm";
+  if (["rooftop", "parcel"].includes(r.accuracy_type))        return "accept";
+  if (r.accuracy_type.startsWith("street"))                   return "confirm";
+  return "confirm";
+}
+```
+
+- **accept** — store `r.standardized` + `r.lat`/`r.lng` silently.
+- **confirm** — show the user the standardized form, get a click.
+- **reject** — refuse the submission, ask the user to edit.
+
+## Error handling
+
+```ts
+try {
+  const r = await validateAddress(client, input, { country });
+} catch (err) {
+  if (err instanceof AcurisAuthError)       throw new Error("Acuris key misconfigured");
+  if (err instanceof AcurisValidationError) return { error: "bad_input" };
+  if (err instanceof AcurisRateLimitError)  return { error: "rate_limit", retryAfter: err.retryAfterSeconds };
+  throw err;
+}
+```
+
+## What to persist
+
+| Column                | From                                |
+| --------------------- | ----------------------------------- |
+| `raw_input`           | What the user typed                 |
+| `formatted_address`   | `r.standardized.formatted_address`  |
+| `street`              | `r.standardized.street`             |
+| `house_number`        | `r.standardized.house_number`       |
+| `city`                | `r.standardized.city`               |
+| `state`               | `r.standardized.state`              |
+| `postcode`            | `r.standardized.postcode`           |
+| `country`             | `r.standardized.country`            |
+| `lat` / `lng`         | `r.lat` / `r.lng`                   |
+| `accuracy_type`       | `r.accuracy_type`                   |
+| `confidence`          | `r.confidence`                      |
+| `validated_at`        | `now()`                             |
+
+## Rules
+
+- **Country is required.** ISO-3 lowercase. Throw 400 client-side if
+  missing rather than sending a useless request.
+- **`accuracy_type === "centroid"`** means a country / locality
+  centroid — treat as no match for delivery or billing use.
+- **`input_corrected: true`** means Acuris changed the input. Surface
+  the correction; don't silently swap.
+- **Cache identical `(country, input)` validations** for a few hours if
+  the same address is hit repeatedly — `/validate` is deterministic.

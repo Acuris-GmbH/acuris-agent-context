@@ -1,0 +1,24 @@
+{
+  "name": "acuris-address",
+  "version": "0.1.0",
+  "description": "Acuris Address Validation & Geocoding agent context — Claude Code plugin, Cursor rules, and open Agent Skill",
+  "author": "Acuris GmbH <engineering@acuris-geo.com>",
+  "license": "MIT",
+  "repository": "https://github.com/Acuris-GmbH/acuris-agent-context",
+  "homepage": "https://github.com/Acuris-GmbH/acuris-agent-context#readme",
+  "keywords": [
+    "acuris",
+    "address-validation",
+    "geocoding",
+    "reverse-geocoding",
+    "autocomplete",
+    "agent-skill",
+    "claude-code-plugin",
+    "cursor-rules",
+    "address-doctor",
+    "loqate",
+    "experian-qas",
+    "melissa",
+    "smarty"
+  ]
+}

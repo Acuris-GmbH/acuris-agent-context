@@ -1,0 +1,102 @@
+---
+description: |
+  Acuris address autocomplete recipe for typeahead components in
+  React checkout / sign-up forms.
+alwaysApply: false
+globs: ["**/checkout/**/*.{tsx,jsx}", "**/address/**/*.{tsx,jsx}", "**/*Autocomplete*.{tsx,jsx}", "**/api/**/{address,suggest,autocomplete}*.{ts,js}"]
+---
+
+# Acuris address autocomplete
+
+For an autocomplete input in a React form, use the published component
+package — it handles debounce, ARIA, keyboard nav, and the
+suggest → validate hand-off:
+
+```bash
+npm install @acuris-geo/av-sdk @acuris-geo/centra-checkout
+```
+
+```tsx
+import { AcurisAddressInput } from "@acuris-geo/centra-checkout";
+
+const ENDPOINTS = {
+  validate: "/api/acuris/validate",
+  suggest:  "/api/acuris/suggest",
+};
+
+<AcurisAddressInput
+  endpoints={ENDPOINTS}
+  country="deu"
+  value={value}
+  onChange={setValue}
+  placeholder="Start typing your address"
+/>
+```
+
+`endpoints` point at *your* backend proxy routes, never directly at
+`api.acuris-geo.com`. The proxy keeps the API key server-side.
+
+## Backend proxy (Next.js App Router)
+
+```ts
+// app/api/acuris/suggest/route.ts
+import { AcurisClient, suggestAddress } from "@acuris-geo/av-sdk";
+
+const client = new AcurisClient({ apiKey: process.env.ACURIS_API_KEY });
+
+export const runtime = "nodejs";
+
+export async function GET(req: Request) {
+  const u = new URL(req.url);
+  const country = u.searchParams.get("country");
+  const q       = u.searchParams.get("q") ?? "";
+  const limit   = Number(u.searchParams.get("limit") ?? "10");
+  if (!country)        return Response.json({ error: "country required" }, { status: 400 });
+  if (q.length < 3)    return Response.json([]);
+  try {
+    const hits = await suggestAddress(client, q, { country, limit });
+    return Response.json(hits, { headers: { "Cache-Control": "private, max-age=10" } });
+  } catch {
+    return Response.json([]);   // typeahead must degrade silently
+  }
+}
+```
+
+## Rules
+
+- **Debounce 150-200ms.** Don't wait for "typed enough" — use
+  `AbortController` to drop stale requests when the user keeps typing.
+- **Minimum 3-character prefix** before calling `/suggest`.
+- **Country is required** on `/suggest` (the API doesn't infer it).
+  ISO-3 lowercase.
+- **Cache `/suggest` 10s.** Identical prefixes during the same session
+  shouldn't bill twice.
+- **`limit`** defaults to 10, server caps at 50.
+- **State bias** (`state: "CA"`) helps when the user picked a US state
+  before typing the street.
+- **On user pick** populate structured fields from the `SuggestionHit`,
+  don't re-parse `formatted_address`.
+
+## Hand-rolled hook (if not React or no component lib)
+
+```tsx
+import { useEffect, useState } from "react";
+
+export function useAcurisSuggest(query: string, country: string) {
+  const [hits, setHits] = useState<any[]>([]);
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 3) { setHits([]); return; }
+    const ac = new AbortController();
+    const timer = setTimeout(async () => {
+      try {
+        const r = await fetch(`/api/acuris/suggest?country=${country}&q=${encodeURIComponent(q)}`,
+                              { signal: ac.signal });
+        if (r.ok) setHits(await r.json());
+      } catch {}
+    }, 150);
+    return () => { ac.abort(); clearTimeout(timer); };
+  }, [query, country]);
+  return hits;
+}
+```
