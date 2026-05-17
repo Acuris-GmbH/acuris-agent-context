@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Autocomplete"
+---
+
 # Address autocomplete in a React checkout form
 
 The pattern: a single-line input that calls `/suggest` as the user

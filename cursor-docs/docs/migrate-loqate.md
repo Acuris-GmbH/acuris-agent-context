@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Migrate Loqate"
+---
+
 # Migration — Loqate Capture / Verify → Acuris
 
 Loqate (GBG) sells two products in this space:

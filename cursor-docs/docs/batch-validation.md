@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Batch Validation"
+---
+
 # Batch address validation
 
 For data-quality cleanup of an existing database — backfilling

@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Reverse Geocode"
+---
+
 # Reverse geocoding — coordinates to nearest address
 
 Use `reverseGeocode` to turn a `(lat, lng)` pair into the nearest known

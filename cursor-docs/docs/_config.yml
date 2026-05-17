@@ -1,0 +1,10 @@
+title: Acuris agent context
+description: Agent-context documentation for the Acuris Address Validation & Geocoding APIs.
+theme: jekyll-theme-cayman
+plugins:
+  - jekyll-relative-links
+relative_links:
+  enabled: true
+  collections: true
+include:
+  - index.md

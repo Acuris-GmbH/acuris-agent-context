@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Node Server"
+---
+
 # Plain Node server usage
 
 For non-Next.js stacks — Express, Fastify, Koa, Hono, raw `http` — the

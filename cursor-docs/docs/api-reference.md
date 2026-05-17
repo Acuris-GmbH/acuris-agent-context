@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Api Reference"
+---
+
 # API reference
 
 Authoritative request/response shapes for the four Acuris endpoints, the
