@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Migrate Informatica"
+---
+
 # Migration — Informatica AddressDoctor (libAddressDoctor) → Acuris
 
 Informatica AddressDoctor (the renamed Address Verification engine

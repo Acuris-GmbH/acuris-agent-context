@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Nextjs Proxy"
+---
+
 # Next.js API proxy routes for Acuris
 
 The standard pattern: a thin set of API routes in your Next.js app that

@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Centra Storefront"
+---
+
 # Centra storefront integration
 
 For storefronts on [Centra](https://centra.com) (Swedish headless

@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Migrate Smarty"
+---
+
 # Migration — Smarty (US Street API, US Autocomplete API, International) → Acuris
 
 Smarty (formerly SmartyStreets) ships three relevant products:

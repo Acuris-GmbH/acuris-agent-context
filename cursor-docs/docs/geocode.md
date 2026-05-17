@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Geocode"
+---
+
 # Forward geocoding — addresses to lat/lng
 
 Use `geocodeAddress` when you have a structured address and need

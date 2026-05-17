@@ -1,3 +1,8 @@
+---
+layout: default
+title: "Validate On Submit"
+---
+
 # Validate on form submit
 
 After the user picks a suggestion (or types the whole address by

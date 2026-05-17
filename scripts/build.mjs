@@ -124,16 +124,55 @@ async function buildCursorDocs() {
     await copyFile(join(SRC, "rules", f), join(out, "rules", f));
   }
 
-  // Docs: flatten SKILL.md + references with frontmatter stripped
+  // Docs: flatten SKILL.md + references, strip skill frontmatter, add a
+  // Jekyll page frontmatter so GitHub Pages renders them as HTML.
   const skillBody = stripFrontmatter(await readFile(join(SRC, "skill/SKILL.md"), "utf8"));
-  await writeFile(join(out, "docs/index.md"), rewriteReferenceLinks(skillBody));
+  await writeFile(
+    join(out, "docs/index.md"),
+    jekyllFrontmatter("Acuris agent context") + rewriteReferenceLinks(skillBody),
+  );
 
   for (const f of await readdir(join(SRC, "skill/references"))) {
     const body = stripFrontmatter(await readFile(join(SRC, "skill/references", f), "utf8"));
-    await writeFile(join(out, "docs", f), rewriteReferenceLinks(body));
+    const title = humanizeFilename(f);
+    await writeFile(
+      join(out, "docs", f),
+      jekyllFrontmatter(title) + rewriteReferenceLinks(body),
+    );
   }
 
+  // Minimal Jekyll config so GitHub Pages applies a theme + relative-link rewriting.
+  await writeFile(join(out, "docs/_config.yml"), jekyllConfig());
+
   await writeFile(join(out, "README.md"), cursorDocsReadme());
+}
+
+function jekyllFrontmatter(title) {
+  return `---\nlayout: default\ntitle: ${JSON.stringify(title)}\n---\n\n`;
+}
+
+function jekyllConfig() {
+  return [
+    "title: Acuris agent context",
+    "description: Agent-context documentation for the Acuris Address Validation & Geocoding APIs.",
+    "theme: jekyll-theme-cayman",
+    "plugins:",
+    "  - jekyll-relative-links",
+    "relative_links:",
+    "  enabled: true",
+    "  collections: true",
+    "include:",
+    "  - index.md",
+    "",
+  ].join("\n");
+}
+
+function humanizeFilename(name) {
+  return name
+    .replace(/\.md$/, "")
+    .split("-")
+    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
+    .join(" ");
 }
 
 async function checkProjectionsFresh(version) {
