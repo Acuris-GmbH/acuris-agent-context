@@ -1,7 +1,7 @@
 {
   "name": "acuris-agent-context",
-  "version": "0.1.0",
-  "description": "Acuris Address Validation & Geocoding agent context — Claude Code plugin, Cursor docs/rules, open Agent Skill.",
+  "version": "0.2.0",
+  "description": "Acuris agent context — Address Validation & Geocoding plus EUDI Wallet Verifier. Claude Code plugin, Cursor docs/rules, open Agent Skill.",
   "type": "module",
   "private": true,
   "scripts": {

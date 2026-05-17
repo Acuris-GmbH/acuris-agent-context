@@ -13,14 +13,24 @@ Distributed in three formats from one source of truth:
   OpenCode, Gemini CLI, Kiro, Goose, and ~30 other tools listed at
   [agentskills.io](https://agentskills.io).
 
-All three teach the same thing: how to wire `@acuris-geo/av-sdk` and
-`@acuris-geo/centra-checkout` correctly into a project, and how to
-migrate from libAddressDoctor (Informatica), Loqate, Experian QAS,
-Melissa, or Smarty.
+All three teach two skills:
 
-> **Status:** `0.1.0`. The Acuris SDK surface is stable; this context
-> package follows it. Expect occasional content additions as we add
-> new recipes and migration vendors.
+- **`acuris-address`** — Address Validation, Geocoding, Reverse
+  Geocoding, Autocomplete. How to wire `@acuris-geo/av-sdk` and
+  `@acuris-geo/centra-checkout` correctly, and how to migrate from
+  libAddressDoctor (Informatica), Loqate, Experian QAS, Melissa, or
+  Smarty.
+- **`acuris-eudi`** — EUDI Wallet Verifier. How to integrate
+  `https://eudi.acuris-geo.com` as a relying party for OID4VP /
+  SD-JWT VC PID verification with EU 27 trust validation, typically
+  for bank KYC and branch-onboarding flows.
+
+Each skill auto-activates only when the user's task matches its
+description, so installing both costs almost no context.
+
+> **Status:** `0.2.0`. The underlying APIs are stable; this context
+> package follows them. Expect occasional content additions as new
+> recipes, migration vendors, and verifier features land.
 
 ## Why this exists
 

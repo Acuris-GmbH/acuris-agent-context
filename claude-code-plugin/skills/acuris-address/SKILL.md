@@ -83,7 +83,11 @@ live in [`references/api-reference.md`](./references/api-reference.md).
 ## Quick start
 
 ```bash
-npm install @acuris-geo/av-sdk
+# Pin to current published versions — the packages are pre-1.0
+# and `^1.x` ranges will not resolve.
+npm install @acuris-geo/av-sdk@^0.1.2
+# (optional, for React storefronts)
+npm install @acuris-geo/centra-checkout@^0.1.1
 ```
 
 ```ts
@@ -114,9 +118,23 @@ When the user hasn't specified otherwise, prefer these:
 
 - **API key in environment.** Read from `process.env.ACURIS_API_KEY`.
   Never inline a key, never expose it to the browser. For local
-  development against the live API, the test key `test` works:
-  `ACURIS_API_KEY=test` — it has abundant credits and is rate-limited
-  but won't bill the developer.
+  evaluation, obtain a free dev key in one call:
+
+  ```bash
+  curl -X POST https://api.acuris-geo.com/dev-key \
+    -H 'Content-Type: application/json' \
+    -d '{"email":"you@example.com"}'
+  # → {"api_key":"<token>","validation_credits":100,
+  #     "geocode_credits":100,"expires_at":"...","tier":"dev",...}
+  export ACURIS_API_KEY=<api_key>
+  ```
+
+  The dev key is capped at 100 validations + 100 geocodes over 7 days
+  (rate-limited 1 issuance per email per day, 1 per IP per day). It
+  works on every endpoint — `/validate`, `/geocode`, `/reverse`,
+  `/suggest`. For more headroom, run the full 28-day trial at
+  `https://api.acuris-geo.com/register` (1000 validations + 1000
+  geocodes). For production, see `https://acuris-geo.com/acuris-pricing/`.
 - **Server-side calls.** The SDK is for Node / edge / server runtimes.
   In a browser app, route through your own backend (Next.js API route,
   Express handler, Cloudflare Worker — see

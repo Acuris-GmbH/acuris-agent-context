@@ -1,6 +1,6 @@
 ---
 layout: default
-title: "Api Reference"
+title: "API Reference"
 ---
 
 # API reference
@@ -26,8 +26,46 @@ The SDK sets this automatically. If you are calling the API by hand
 (curl, Postman, generated client from a third-party tool), use this
 header — not `Authorization: Bearer`.
 
-For local development without billing, use `ACURIS_API_KEY=test`. It has
-ample credits and is rate-limited for evaluation.
+### Getting a key
+
+Two self-service paths:
+
+| Endpoint                                 | Best for                              | Caps                                                |
+| ---------------------------------------- | ------------------------------------- | --------------------------------------------------- |
+| `POST /dev-key`                          | AI-skill / SDK evaluation             | 100 validations + 100 geocodes, 7 days; 1/email/day. |
+| `POST /register` (web form at `/register`) | Full trial, paid plan onboarding    | 1000 validations + 1000 geocodes, 28 days.          |
+
+`POST /dev-key` is one step and returns the key in the response body:
+
+```bash
+curl -X POST https://api.acuris-geo.com/dev-key \
+  -H 'Content-Type: application/json' \
+  -d '{"email":"you@example.com"}'
+```
+
+Response:
+
+```json
+{
+  "api_key":             "<token>",
+  "validation_credits":  100,
+  "geocode_credits":     100,
+  "expires_at":          "2026-... UTC",
+  "tier":                "dev",
+  "info_url":            "https://acuris-geo.com/acuris-pricing/",
+  "next_steps":          "Set ACURIS_API_KEY=<api_key> ..."
+}
+```
+
+The dev key authenticates every endpoint (`/validate`, `/geocode`,
+`/reverse`, `/suggest`). It's not a special "demo-only" tier — the
+calls execute against the same live cascade as paid traffic.
+
+> **Note on the literal value `test`.** The string `"test"` is **not**
+> a universal evaluation key. It works on `/suggest` for legacy
+> marketing-site widgets but is rejected by `/validate`, `/geocode`,
+> and `/reverse`. Use `POST /dev-key` for evaluation instead — it
+> takes 5 seconds and gives you a real key.
 
 ## Base URL
 
@@ -276,7 +314,31 @@ The SDK retries the following automatically with exponential backoff
 Anything else propagates immediately. Don't add a second retry loop on
 top — you'll multiply the budget and confuse the rate-limiter.
 
-To tune for batch jobs:
+### Tuning timeouts and the retry budget
+
+The default `timeoutMs: 5000` is right for most server-side use.
+Two situations want different settings:
+
+- **Cold first-call sensitivity.** TLS handshake + DNS on the very
+  first call from a freshly-started Node process can occasionally
+  exceed 5s on certain network paths. Combined with the default
+  `maxRetries: 3`, that turns into a 15+s wall-time before the call
+  fails — long enough to time out an HTTP proxy upstream. If you see
+  intermittent timeouts on the first call after a deploy, bump
+  `timeoutMs` to `10_000`. Subsequent calls reuse the keep-alive
+  connection and complete in ~50-100ms.
+- **Batch jobs.** Wider timeouts and a deeper retry budget make
+  sense when wall-time per row matters less than completion:
+
+  ```ts
+  const client = new AcurisClient({
+    apiKey:     process.env.ACURIS_API_KEY,
+    timeoutMs:  15_000,
+    maxRetries: 5,
+  });
+  ```
+
+Per-call overrides also work:
 
 ```ts
 await validateAddress(client, addr, {

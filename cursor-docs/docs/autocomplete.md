@@ -16,7 +16,7 @@ If you can take a React dependency, the component package does this
 for you:
 
 ```bash
-npm install @acuris-geo/av-sdk @acuris-geo/centra-checkout
+npm install @acuris-geo/av-sdk@^0.1.2 @acuris-geo/centra-checkout@^0.1.1
 ```
 
 ```tsx
@@ -46,6 +46,42 @@ export function AddressField({ country = "deu" }: { country?: string }) {
 server-side. The component handles debouncing, keyboard navigation,
 and ARIA. See [nextjs-proxy.md](./nextjs-proxy.md) for the route
 implementations.
+
+### `<AcurisAddressInput>` props
+
+The component extends standard `<input>` HTML attributes (omitting
+`onChange`, `value`, `onSelect`). Acuris-specific props:
+
+| Prop                    | Type                                       | Default | Notes                                                |
+| ----------------------- | ------------------------------------------ | ------- | ---------------------------------------------------- |
+| `endpoints`             | `{ validate: string; suggest?: string }`   | —       | Required. URLs on **your** backend, not Acuris.       |
+| `country`               | `string` (ISO-3 lowercase)                  | —       | Required. Biases suggestions by country.              |
+| `value`                 | `string`                                    | —       | Required. Current input text (controlled).            |
+| `onChange`              | `(value: string) => void`                   | —       | Required. Fires on every keystroke and on pick.       |
+| `onSelect`              | `(hit: SuggestionHit) => void`              | —       | Fires once when the user picks a suggestion.          |
+| `debounceMs`            | `number`                                    | `200`   | Window before firing `/suggest`.                      |
+| `minQueryLength`        | `number`                                    | `3`     | **Not** `minLength` — that's an HTML input attribute. |
+| `limit`                 | `number`                                    | `5`     | Server caps at 50.                                    |
+| `state`                 | `string` (uppercase)                        | —       | Region bias for `usa`/`can`/`aus`.                    |
+| `renderSuggestion`      | `(hit, index) => ReactNode`                 | —       | Custom row renderer.                                  |
+| `suggestionsClassName`  | `string`                                    | —       | Class on the dropdown container.                      |
+
+Plus any standard `<input>` attribute (`id`, `placeholder`, `disabled`,
+`autoComplete`, `className`, etc.).
+
+### `<AcurisAddressValidator>` props
+
+| Prop          | Type                                              | Default | Notes                                          |
+| ------------- | ------------------------------------------------- | ------- | ---------------------------------------------- |
+| `endpoints`   | `{ validate: string; suggest?: string }`          | —       | Required.                                      |
+| `country`     | `string`                                           | —       | Required. ISO-3 lowercase.                     |
+| `address`     | `FieldedAddressInput \| string`                   | —       | Required.                                      |
+| `trigger`     | `"blur" \| "submit" \| "manual"`                  | `"blur"` | When to run validation.                       |
+| `children`    | `(state: ValidatorRenderState) => ReactNode`      | —       | Render prop. Receives `{ status, result, error, validate, formProps }`. |
+
+Use `trigger="submit"` for checkout flows; `trigger="blur"` for
+optional address-quality nudges; `trigger="manual"` plus calling
+`state.validate()` yourself when you want full control.
 
 ## Option B — hand-rolled hook
 

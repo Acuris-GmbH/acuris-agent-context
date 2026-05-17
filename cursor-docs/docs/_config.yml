@@ -1,5 +1,5 @@
 title: Acuris agent context
-description: Agent-context documentation for the Acuris Address Validation & Geocoding APIs.
+description: Agent-context documentation for the Acuris Address Validation, Geocoding, and EUDI Wallet Verifier APIs.
 theme: jekyll-theme-cayman
 plugins:
   - jekyll-relative-links
@@ -8,3 +8,4 @@ relative_links:
   collections: true
 include:
   - index.md
+  - eudi

@@ -1,0 +1,107 @@
+---
+description: |
+  Acuris EUDI Wallet Verifier — hosted OID4VP relying-party service at
+  https://eudi.acuris-geo.com. Use when the user is integrating EU
+  Digital Identity Wallet verification (SD-JWT VC PID), generating
+  presentation_definitions, handling vp_token responses, or wiring an
+  RP backend that initiates verification sessions and polls for
+  results.
+alwaysApply: false
+---
+
+# Acuris EUDI Wallet Verifier
+
+A hosted OID4VP relying-party verifier that validates EU Digital
+Identity Wallet PID presentations and cross-checks the disclosed
+residence address against the Acuris AV pipeline.
+
+## Two HTTP calls
+
+You implement these. The wallet handles everything in between.
+
+| Endpoint                                              | Method | Purpose                       |
+| ----------------------------------------------------- | ------ | ----------------------------- |
+| `POST /v1/eudi/sessions`                              | POST   | Start a verification session  |
+| `GET  /v1/eudi/sessions/{session_id}/result`          | GET    | Poll for the result           |
+
+Base URL: `https://eudi.acuris-geo.com`.
+
+## Start a session
+
+```ts
+const r = await fetch("https://eudi.acuris-geo.com/v1/eudi/sessions", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    customer_id: "<your-case-id>",                       // opaque correlation
+    requested_fields: [                                  // whitelisted address fields
+      "resident_country", "resident_city", "resident_postal_code",
+      "resident_street", "resident_house_number",
+    ],
+  }),
+});
+const { session_id, qr_code_data_url, polling_url, expires_at } = await r.json();
+// Render qr_code_data_url to the user. Poll polling_url.
+```
+
+## Poll for the result
+
+```ts
+async function pollUntilDone(pollingUrl: string) {
+  while (true) {
+    const r = await fetch(pollingUrl);
+    const result = await r.json();
+    if (result.verification_status !== "pending") return result;
+    await new Promise(res => setTimeout(res, 2000));
+  }
+}
+```
+
+Terminal statuses: `valid`, `invalid`, `expired`.
+
+## Rules to follow
+
+- **Address-only.** The verifier whitelists 6 `resident_*` fields plus
+  3 identity claims (passed through, not validated). Requesting other
+  fields silently drops them.
+- **Polling, not webhooks.** Phase 2 ships polling-only. `callback_url`
+  is reserved for Phase 3 — currently ignored.
+- **Poll every 2s.** Aggressive polling rate-limits you; the
+  bottleneck is the user's consent flow (5-30s).
+- **Don't call `/v1/eudi/callback` or `/v1/eudi/presentation-definition/*`
+  from your backend.** Those are wallet endpoints.
+- **Don't echo the OID4VP `nonce`.** It's embedded in `presentation_uri`
+  for the wallet; exposing it widens replay surface.
+- **`verification_status: "pending"` is normal.** Means the wallet
+  hasn't called back yet. Keep polling.
+- **Branch on `verification_status` first, then `address.accuracy_type`.**
+  A `valid` session with `accuracy_type: "Unverified"` is a common
+  combination (credential genuine, address didn't match reference data).
+- **`accuracy_type` is a 4-bucket scale** here, not the AV open enum:
+  `Verified` (auto-accept), `Corrected` (confirm with user),
+  `Partial` (ZIP-only — depends on your product), `Unverified` (reject).
+- **`skipped_reason`** is non-null when AV cross-reference was skipped
+  (partial disclosure, AV transport error, out-of-scope country). Log
+  it; treat as first-class outcome.
+
+## Trust model in one paragraph
+
+The verifier walks every credential's x5c chain up to a root, verifies
+the root against the issuing member state's national TSL, verifies
+the TSL against the EU LOTL, verifies the LOTL against the pinned OJ
+trust anchors, and checks the leaf cert's CRL. EU 27 + EEA non-EU
+scope (26/27 EU TSLs currently loaded). If any link breaks,
+`verification_status` is `invalid` and `credential_validity.*` shows
+which check failed.
+
+## Common mistakes
+
+1. Calling `/v1/eudi/callback` from your backend (wallet endpoint).
+2. Polling at < 500ms intervals (rate-limited, no faster results).
+3. Treating `Corrected` as `Verified` (it isn't — confirm with user).
+4. Treating `Partial` as failure (legitimate ZIP-only disclosure).
+5. Requesting identity fields you don't need (erodes user trust on
+   the wallet consent screen).
+6. Assuming `signature_valid: true` proves identity binding (it
+   proves credential genuineness; user-to-credential binding needs
+   biometric/liveness layered on top).
