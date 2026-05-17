@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.2.2 — 2026-05-17
+
+- **Distinguish autocomplete coverage from validation coverage.**
+  Previous skill content lumped both into one "safe default country
+  picker" with 8+ countries (deu, usa, fra, nld, esp, ita, fin, swe).
+  That's correct for `/validate` / `/geocode` / `/reverse` (no
+  licensing risk) but actively wrong for `/suggest` — autocomplete
+  only has 5 countries wired (USA, DEU, NLD, FIN, SWE; others need
+  NORM columns + indexes). Listing FRA/ESP/ITA in an autocomplete
+  produces silent empty dropdowns when users type — embarrassing
+  failure mode.
+- New Common Mistake #11 in SKILL.md spelling out `AUTOCOMPLETE_COUNTRIES`
+  (the 5) vs `VALIDATION_COUNTRIES` (the broader set).
+- Big warning block at the top of `references/autocomplete.md`
+  pinning the autocomplete-enabled set explicitly.
+- Cursor rules (`acuris-overview.mdc` + `acuris-autocomplete.mdc`)
+  both updated with the narrower autocomplete set.
+- Surfaced by an AI-built demo that listed Spain in an autocomplete
+  picker — typing produced no results because `/suggest` isn't wired
+  for ESP.
+
 ## 0.2.1 — 2026-05-17
 
 - Quick-start examples bumped to `@acuris-geo/centra-checkout@^0.1.2`

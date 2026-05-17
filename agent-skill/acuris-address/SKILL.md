@@ -214,24 +214,74 @@ Avoid them.
    that licence is in place, omit `gbr` from any demo, autocomplete
    country list, or `requested_fields` country set.
 
-   A safe default country picker:
+11. **Listing a country in an autocomplete picker that doesn't have
+   `/suggest` wired.** This is the most common source of an
+   embarrassing demo. **`/suggest` (autocomplete) and `/validate` /
+   `/geocode` / `/reverse` cover different country sets.** Validation
+   and geocoding work against 200+ ISO-3 codes; autocomplete requires
+   per-country NORM columns + indexes (a separate engineering step)
+   and currently runs for only 5 countries:
 
    ```ts
-   const COUNTRIES = [
-     { code: "deu", label: "Germany" },
+   // The ONLY countries with /suggest wired (as of 0.2.2):
+   const AUTOCOMPLETE_COUNTRIES = [
      { code: "usa", label: "United States" },
-     { code: "fra", label: "France" },
+     { code: "deu", label: "Germany" },
      { code: "nld", label: "Netherlands" },
-     { code: "esp", label: "Spain" },
-     { code: "ita", label: "Italy" },
      { code: "fin", label: "Finland" },
      { code: "swe", label: "Sweden" },
    ];
    ```
 
-   Other countries with current Acuris coverage that are safe to list:
-   `nor`, `dnk`, `aut`, `che`, `bel`, `prt`, `aus`, `nzl`, `jpn`, `sgp`,
-   `bra`, `mex`, `can`. **Always omit `gbr`** until told otherwise.
+   Listing `fra`, `esp`, `ita`, etc. in an **autocomplete** picker is
+   actively worse than omitting them — the user types and nothing
+   happens, which reads as "the product is broken." `/suggest` returns
+   `[]` silently for those countries.
+
+   The broader country picker for **validation / geocoding / reverse
+   geocoding** demos is fine to include them:
+
+   ```ts
+   // Safe for /validate, /geocode, /reverse (NOT for /suggest):
+   const VALIDATION_COUNTRIES = [
+     // Autocomplete-enabled subset:
+     { code: "usa", label: "United States" },
+     { code: "deu", label: "Germany" },
+     { code: "nld", label: "Netherlands" },
+     { code: "fin", label: "Finland" },
+     { code: "swe", label: "Sweden" },
+     // Validation/geocoding-only (NOT autocomplete):
+     { code: "fra", label: "France" },
+     { code: "esp", label: "Spain" },
+     { code: "ita", label: "Italy" },
+     { code: "nor", label: "Norway" },
+     { code: "dnk", label: "Denmark" },
+     { code: "aut", label: "Austria" },
+     { code: "che", label: "Switzerland" },
+     { code: "bel", label: "Belgium" },
+     { code: "prt", label: "Portugal" },
+     { code: "aus", label: "Australia" },
+     { code: "nzl", label: "New Zealand" },
+     { code: "jpn", label: "Japan" },
+     { code: "sgp", label: "Singapore" },
+     { code: "bra", label: "Brazil" },
+     { code: "mex", label: "Mexico" },
+     { code: "can", label: "Canada" },
+   ];
+   ```
+
+   **Rules of thumb:**
+   - If the UI uses `<AcurisAddressInput>` (typeahead): use
+     `AUTOCOMPLETE_COUNTRIES` (the 5).
+   - If the UI uses `<AcurisAddressValidator>` or any structured form
+     that hits `/validate` / `/geocode` / `/reverse`: either list is
+     fine.
+   - Mixed (autocomplete + validation in the same form, same country
+     picker): use `AUTOCOMPLETE_COUNTRIES`. The validation set is a
+     superset; user can still validate any of those 5.
+
+   The autocomplete-enabled set grows as new countries get NORM
+   columns. If this list looks stale, ask before extending it.
 
 ## Implementation patterns
 

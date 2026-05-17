@@ -64,6 +64,24 @@ export async function GET(req: Request) {
 
 ## Rules
 
+- **Country coverage for autocomplete is narrower than for validation.**
+  Only 5 countries currently have `/suggest` wired:
+
+  ```ts
+  const AUTOCOMPLETE_COUNTRIES = [
+    { code: "usa", label: "United States" },
+    { code: "deu", label: "Germany" },
+    { code: "nld", label: "Netherlands" },
+    { code: "fin", label: "Finland" },
+    { code: "swe", label: "Sweden" },
+  ];
+  ```
+
+  Listing `fra`, `esp`, `ita`, etc. in an autocomplete picker is worse
+  than omitting them — the user types and nothing happens. `/suggest`
+  returns `[]` silently for those countries. For validation/geocoding
+  flows the wider country set is fine, but **not for autocomplete**.
+
 - **Debounce 150-200ms.** Don't wait for "typed enough" — use
   `AbortController` to drop stale requests when the user keeps typing.
 - **Minimum 3-character prefix** before calling `/suggest`.
