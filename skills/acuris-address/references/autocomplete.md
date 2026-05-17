@@ -1,9 +1,42 @@
 # Address autocomplete in a React checkout form
 
-The pattern: a single-line input that calls `/suggest` as the user
-types, debounced. When the user picks a suggestion you populate the
-structured fields and (optionally) run `/validate` on submit to lock
-in the canonical form.
+## What autocomplete is — and is not
+
+**Autocomplete is one input** that shows a dropdown of suggestions
+as the user types, and fires a callback when they pick one. That's
+it. A `<AcurisAddressInput>` plus a country selector is the entire
+UI surface.
+
+**Autocomplete is NOT a structured form** with separate boxes for
+street / house number / postcode / city / state. Building one of
+those alongside the autocomplete defeats the point — the user just
+told the autocomplete what they want; making them re-type the same
+data into split fields is exactly the friction autocomplete exists
+to remove. The structured fields belong in a *different* recipe
+(see [`validate-on-submit.md`](./validate-on-submit.md) if you need
+form-style validation, or
+[`api-reference.md`](./api-reference.md) for fielded
+`validateAddress` calls).
+
+When the user asks for "an autocomplete component," ship:
+
+- The country picker (a single `<select>`).
+- The `<AcurisAddressInput>`.
+- A small status line showing what they picked (`formatted_address`).
+
+Nothing else. No street/postcode/city input boxes. No "Validate &
+continue" button. Those are different recipes — load them when the
+user asks for them.
+
+## The pattern
+
+A single-line input that calls `/suggest` as the user types,
+debounced. When they pick a suggestion you receive a `SuggestionHit`
+with the structured fields attached (`street`, `house_number`,
+`city`, `postcode`, `lat`, `lng`, `formatted_address`) — for display
+use `formatted_address`; for further server-side calls pass the hit
+to `validateAddress` (the SDK accepts it). You don't need to render
+those sub-fields to the user.
 
 ## Option A — drop-in React component
 
@@ -180,24 +213,41 @@ export async function GET(req: Request) {
 
 ## When the user picks a suggestion
 
-A `SuggestionHit` already has the structured fields. Populate your form
-state from those rather than re-parsing `formatted_address`:
+A `SuggestionHit` already has the structured fields. **For a pure
+autocomplete, store the hit and display `formatted_address` back to
+the user.** Don't render the sub-fields as inputs.
 
 ```tsx
-function onPick(hit: SuggestionHit) {
-  setForm({
-    street:       hit.street ?? "",
-    house_number: hit.house_number ?? "",
-    city:         hit.city ?? "",
-    state:        hit.state ?? "",
-    postcode:     hit.postcode ?? "",
-    country:      hit.country,
-    lat:          hit.lat,
-    lng:          hit.lng,
-  });
+function MyAutocomplete() {
+  const [value, setValue] = useState("");
+  const [picked, setPicked] = useState<SuggestionHit | null>(null);
+
+  return (
+    <>
+      <AcurisAddressInput
+        endpoints={ENDPOINTS}
+        country={country}
+        value={value}
+        onChange={setValue}
+        onSelect={setPicked}
+      />
+      {picked && (
+        <p>Selected: {picked.formatted_address}</p>
+      )}
+    </>
+  );
 }
 ```
 
-Then on submit, call `/api/acuris/validate` with the structured form to
-confirm and pull in the canonical `formatted_address`. See
-[validate-on-submit.md](./validate-on-submit.md).
+If your form *also* needs full validation on submit (a checkout flow,
+say — distinct from "autocomplete"), pass the hit straight to
+`validateAddress` on the server:
+
+```ts
+await validateAddress(client, picked, { country: picked.country });
+```
+
+The SDK accepts a `SuggestionHit`-shaped fielded input directly. No
+need to re-render the components as separate input boxes. See
+[`validate-on-submit.md`](./validate-on-submit.md) for the full
+validation flow if that's what you're building.

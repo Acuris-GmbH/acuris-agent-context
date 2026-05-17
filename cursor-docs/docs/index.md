@@ -179,7 +179,17 @@ Avoid them.
    typed. Otherwise you can't tell later whether a confidence drop is
    the user's fault or Acuris's.
 
-9. **Listing the United Kingdom (`gbr`) in a country picker.** Acuris
+9. **Building a "structured-fields form" when the user asked for
+   autocomplete.** Autocomplete is one input + dropdown + pick — the
+   suggestion already carries the parsed fields, so you don't render
+   them as separate boxes. If the user asked for "autocomplete," ship
+   just the `<AcurisAddressInput>` and a status line; the street /
+   house-number / postcode / city sub-fields belong in the
+   validate-on-submit recipe, not the autocomplete one. See
+   [`references/autocomplete.md`](autocomplete.md) — the
+   "What autocomplete is and is not" section at the top covers this.
+
+10. **Listing the United Kingdom (`gbr`) in a country picker.** Acuris
    does not currently hold a Royal Mail PAF (Postcode Address File)
    licence, which is required for commercial use of UK address data.
    `/validate` and `/suggest` may return technically-shaped results for
