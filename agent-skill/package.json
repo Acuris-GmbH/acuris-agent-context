@@ -1,6 +1,6 @@
 {
   "name": "acuris",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Acuris agent context — Address Validation & Geocoding plus EUDI Wallet Verifier. Claude Code plugin, Cursor rules, and open Agent Skill.",
   "author": "Acuris GmbH <engineering@acuris-geo.com>",
   "license": "MIT",

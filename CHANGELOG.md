@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.2.1 — 2026-05-17
+
+- Quick-start examples bumped to `@acuris-geo/centra-checkout@^0.1.2`
+  (visible default dropdown styles).
+- New "Styling" section in `references/autocomplete.md` documenting:
+  the zero-specificity default styles, the three override paths
+  (`suggestionsClassName`, `renderSuggestion`, the
+  `data-acuris-default-styles="off"` attribute), and the
+  selector-stable hook points (`[data-acuris-input]`,
+  `[data-acuris-suggestions]`, etc.).
+- Surfaced by a real demo where the previous-generation agent produced
+  a working backend but an invisible dropdown — Tailwind v4 preflight
+  stripped the `<ul>/<li>` defaults. Fixed both in the component
+  (0.1.2 ships defaults) and in the skill (the section explains the
+  contract).
+
 ## 0.2.0 — 2026-05-17
 
 - **New skill `acuris-eudi`** for the Acuris EUDI Wallet Verifier

@@ -44,8 +44,14 @@ If you can take a React dependency, the component package does this
 for you:
 
 ```bash
-npm install @acuris-geo/av-sdk@^0.1.2 @acuris-geo/centra-checkout@^0.1.1
+npm install @acuris-geo/av-sdk@^0.1.2 @acuris-geo/centra-checkout@^0.1.2
 ```
+
+> **Pin `@acuris-geo/centra-checkout` to `^0.1.2`.** Earlier versions
+> shipped the dropdown unstyled, which renders as invisible text in
+> Tailwind v4 / modern CSS-reset environments. 0.1.2 ships zero-specificity
+> default styles so the dropdown works out-of-the-box; see the "Styling"
+> section below if you want to override them.
 
 ```tsx
 import { AcurisAddressInput } from "@acuris-geo/centra-checkout";
@@ -189,6 +195,77 @@ export async function GET(req: Request) {
   }
 }
 ```
+
+## Styling
+
+As of `@acuris-geo/centra-checkout@0.1.2`, the dropdown ships with
+sensible default styles (white bg, dark text, border, shadow, hover
+state, dark-mode variant). Injected via a single `<style>` block in
+`<head>` on first component mount.
+
+All defaults use `:where(...)` selectors so their CSS specificity is
+zero — **any consumer styling automatically wins** without needing
+`!important`. Three ways to customize:
+
+1. **Pass a `suggestionsClassName`** for the `<ul>`:
+
+   ```tsx
+   <AcurisAddressInput
+     endpoints={ENDPOINTS}
+     country={country}
+     value={value}
+     onChange={setValue}
+     suggestionsClassName="my-dropdown"
+   />
+   ```
+
+   ```css
+   .my-dropdown {
+     background: #fafafa;
+     border: 2px solid #c97a2b;
+   }
+   ```
+
+2. **Pass a `renderSuggestion`** to control how each row is rendered:
+
+   ```tsx
+   <AcurisAddressInput
+     endpoints={ENDPOINTS}
+     country={country}
+     value={value}
+     onChange={setValue}
+     renderSuggestion={(hit) => (
+       <div className="flex flex-col px-3 py-2 hover:bg-orange-50">
+         <span className="text-sm">{hit.formatted_address}</span>
+       </div>
+     )}
+   />
+   ```
+
+   Note: when you pass `renderSuggestion`, you own the row's padding,
+   typography, and hover state. The default `li` padding/hover only
+   applies when `renderSuggestion` is omitted.
+
+3. **Opt out of defaults entirely** by setting an attribute on `<html>`:
+
+   ```html
+   <html data-acuris-default-styles="off">
+   ```
+
+   The `:where(html:not([data-acuris-default-styles="off"]) ...)` guard
+   on every default rule means setting this attribute disables them
+   all. Useful when your design system already covers `[data-acuris-suggestions]`.
+
+The component's render output exposes hook points for selector-based
+styling without needing any of the above:
+
+| Attribute                                | Selects                              |
+| ---------------------------------------- | ------------------------------------ |
+| `[data-acuris-input]`                    | The wrapper `<div>`                  |
+| `[data-acuris-suggestions]`              | The dropdown `<ul>`                  |
+| `[data-acuris-suggestions] li`           | Each suggestion row                  |
+| `[data-acuris-suggestions] li[aria-selected="true"]` | Keyboard-highlighted row |
+| `[data-acuris-suggestions] li[data-acuris-state="loading"]` | The "Loading…" placeholder |
 
 ## Gotchas
 

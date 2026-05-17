@@ -1,7 +1,7 @@
 {
   "name": "acuris",
   "description": "Acuris developer skills for Claude Code — Address Validation & Geocoding (autocomplete, validation, forward/reverse geocoding, batch cleanup, and migrations from libAddressDoctor, Loqate, Experian QAS, Melissa, Smarty) plus EUDI Wallet Verifier (OID4VP relying-party integration with SD-JWT VC, presentation_definition, and EU 27 trust validation).",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "author": {
     "name": "Acuris GmbH",
     "email": "engineering@acuris-geo.com"

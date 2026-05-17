@@ -1,6 +1,6 @@
 # Acuris — Claude Code plugin
 
-Two Acuris skills bundled into one Claude Code plugin. Version 0.2.0.
+Two Acuris skills bundled into one Claude Code plugin. Version 0.2.1.
 
 ## Install
 
