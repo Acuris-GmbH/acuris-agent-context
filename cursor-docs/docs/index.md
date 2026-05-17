@@ -179,6 +179,34 @@ Avoid them.
    typed. Otherwise you can't tell later whether a confidence drop is
    the user's fault or Acuris's.
 
+9. **Listing the United Kingdom (`gbr`) in a country picker.** Acuris
+   does not currently hold a Royal Mail PAF (Postcode Address File)
+   licence, which is required for commercial use of UK address data.
+   `/validate` and `/suggest` may return technically-shaped results for
+   `gbr` inputs, but **shipping UK in a customer-facing country picker
+   exposes the integrator (and Acuris) to licensing liability**. Until
+   that licence is in place, omit `gbr` from any demo, autocomplete
+   country list, or `requested_fields` country set.
+
+   A safe default country picker:
+
+   ```ts
+   const COUNTRIES = [
+     { code: "deu", label: "Germany" },
+     { code: "usa", label: "United States" },
+     { code: "fra", label: "France" },
+     { code: "nld", label: "Netherlands" },
+     { code: "esp", label: "Spain" },
+     { code: "ita", label: "Italy" },
+     { code: "fin", label: "Finland" },
+     { code: "swe", label: "Sweden" },
+   ];
+   ```
+
+   Other countries with current Acuris coverage that are safe to list:
+   `nor`, `dnk`, `aut`, `che`, `bel`, `prt`, `aus`, `nzl`, `jpn`, `sgp`,
+   `bra`, `mex`, `can`. **Always omit `gbr`** until told otherwise.
+
 ## Implementation patterns
 
 The implementation recipes are in `references/`. Load whichever ones
