@@ -70,8 +70,8 @@ live in [`references/api-reference.md`](api-reference.md).
 # Pin to current published versions — the packages are pre-1.0
 # and `^1.x` ranges will not resolve.
 npm install @acuris-geo/av-sdk@^0.1.2
-# (optional, for React storefronts)
-npm install @acuris-geo/centra-checkout@^0.1.1
+# (optional, for React storefronts — 0.1.2+ for visible dropdown defaults)
+npm install @acuris-geo/centra-checkout@^0.1.2
 ```
 
 ```ts

@@ -1,7 +1,7 @@
 # Acuris — Open Agent Skill package
 
 Acuris agent skills in the open [Agent Skills](https://agentskills.io)
-format. Version 0.2.0.
+format. Version 0.2.1.
 
 Two skills shipped:
 
