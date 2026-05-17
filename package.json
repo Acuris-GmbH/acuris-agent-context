@@ -1,0 +1,24 @@
+{
+  "name": "acuris-agent-context",
+  "version": "0.1.0",
+  "description": "Acuris Address Validation & Geocoding agent context — Claude Code plugin, Cursor docs/rules, open Agent Skill.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build":       "node scripts/build.mjs",
+    "build:check": "node scripts/build.mjs --check"
+  },
+  "author": "Acuris GmbH <engineering@acuris-geo.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url":  "git+https://github.com/Acuris-GmbH/acuris-agent-context.git"
+  },
+  "homepage": "https://github.com/Acuris-GmbH/acuris-agent-context#readme",
+  "bugs": {
+    "url": "https://github.com/Acuris-GmbH/acuris-agent-context/issues"
+  },
+  "engines": {
+    "node": ">=18.17.0"
+  }
+}

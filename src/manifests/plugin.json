@@ -1,0 +1,27 @@
+{
+  "name": "acuris-address",
+  "description": "Acuris Address Validation & Geocoding API integration — autocomplete, validation, forward/reverse geocoding, batch cleanup, and migrations from libAddressDoctor, Loqate, Experian QAS, Melissa, and Smarty.",
+  "version": "{{VERSION}}",
+  "author": {
+    "name": "Acuris GmbH",
+    "email": "engineering@acuris-geo.com"
+  },
+  "license": "MIT",
+  "homepage": "https://acuris-geo.com",
+  "repository": "https://github.com/Acuris-GmbH/acuris-agent-context",
+  "keywords": [
+    "acuris",
+    "address-validation",
+    "geocoding",
+    "reverse-geocoding",
+    "autocomplete",
+    "address",
+    "checkout",
+    "centra",
+    "loqate-migration",
+    "smarty-migration",
+    "experian-qas-migration",
+    "melissa-migration",
+    "addressdoctor-migration"
+  ]
+}

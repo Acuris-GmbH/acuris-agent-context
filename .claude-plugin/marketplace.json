@@ -1,0 +1,29 @@
+{
+  "name": "acuris-plugins",
+  "owner": {
+    "name": "Acuris GmbH",
+    "email": "engineering@acuris-geo.com"
+  },
+  "metadata": {
+    "description": "Acuris developer plugins for AI coding agents — Claude Code, Cursor, and any client that consumes Anthropic Agent Skills.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "acuris-address",
+      "source": "./claude-code-plugin",
+      "description": "Acuris Address Validation & Geocoding APIs — autocomplete, validation, forward/reverse geocoding, and migrations from libAddressDoctor, Loqate, Experian QAS, Melissa, and Smarty.",
+      "category": "address-validation",
+      "tags": ["acuris", "address", "geocoding", "validation", "autocomplete"],
+      "keywords": [
+        "acuris",
+        "address-validation",
+        "geocoding",
+        "autocomplete",
+        "checkout",
+        "centra"
+      ],
+      "version": "0.1.0"
+    }
+  ]
+}
