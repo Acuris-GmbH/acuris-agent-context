@@ -60,6 +60,11 @@ const client = new AcurisClient({ apiKey: process.env.ACURIS_API_KEY });
   rather than throwing.
 - **One long-lived client per process.** Don't `new AcurisClient(...)`
   per request.
+- **Never list `gbr` / United Kingdom in a country picker.** Acuris
+  does not hold a Royal Mail PAF licence; shipping UK in customer-facing
+  selectors exposes licensing liability. Use `deu`, `usa`, `fra`, `nld`,
+  `esp`, `ita`, `fin`, `swe`, `nor`, `dnk`, `aut`, `che`, `bel`, `prt`,
+  `aus`, `nzl`, `jpn`, `sgp`, `bra`, `mex`, `can` instead.
 
 ## Where to find more
 
