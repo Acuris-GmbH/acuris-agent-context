@@ -6,24 +6,26 @@
   },
   "metadata": {
     "description": "Acuris developer plugins for AI coding agents — Claude Code, Cursor, and any client that consumes Anthropic Agent Skills.",
-    "version": "0.1.0"
+    "version": "0.2.0"
   },
   "plugins": [
     {
-      "name": "acuris-address",
+      "name": "acuris",
       "source": "./claude-code-plugin",
-      "description": "Acuris Address Validation & Geocoding APIs — autocomplete, validation, forward/reverse geocoding, and migrations from libAddressDoctor, Loqate, Experian QAS, Melissa, and Smarty.",
+      "description": "Acuris developer skills: Address Validation & Geocoding (autocomplete, validation, forward/reverse geocoding, batch cleanup, migrations from libAddressDoctor, Loqate, Experian QAS, Melissa, Smarty) plus EUDI Wallet Verifier (OID4VP relying-party integration).",
       "category": "address-validation",
-      "tags": ["acuris", "address", "geocoding", "validation", "autocomplete"],
+      "tags": ["acuris", "address", "geocoding", "validation", "autocomplete", "eudi", "oid4vp"],
       "keywords": [
         "acuris",
         "address-validation",
         "geocoding",
         "autocomplete",
         "checkout",
-        "centra"
+        "centra",
+        "eudi-wallet",
+        "oid4vp"
       ],
-      "version": "0.1.0"
+      "version": "0.2.0"
     }
   ]
 }

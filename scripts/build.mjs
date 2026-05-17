@@ -1,27 +1,38 @@
 #!/usr/bin/env node
 /**
- * Build all three distribution projections from src/.
+ * Build all distribution projections from src/.
  *
  *   node scripts/build.mjs           — rebuild from source
  *   node scripts/build.mjs --check   — fail if projections are stale
  *
+ * Source layout:
+ *   src/skill/         — canonical "acuris-address" skill
+ *   src/skill-eudi/    — canonical "acuris-eudi" skill
+ *   src/manifests/     — JSON manifest templates
+ *   src/rules/         — Cursor MDC rule sources
+ *
  * Outputs:
- *   claude-code-plugin/      — Claude Code plugin (manifest + skill)
- *   agent-skill/             — Open Agent Skill package
- *   skills/acuris-address/   — Alias so `npx skills add` finds the skill
- *   cursor-docs/             — Cursor MDC rules + flat markdown docs
+ *   claude-code-plugin/      — Claude Code plugin (manifest + both skills)
+ *   agent-skill/             — Open Agent Skill package (both skills)
+ *   skills/<name>/           — Aliases so `npx skills add` finds each skill
+ *   cursor-docs/             — Cursor MDC rules + flat markdown docs site
  *   .claude-plugin/          — Marketplace manifest at repo root
  */
 
-import { readFile, writeFile, mkdir, rm, readdir, copyFile, stat } from "node:fs/promises";
-import { existsSync, statSync } from "node:fs";
-import { dirname, join, relative, basename } from "node:path";
+import { readFile, writeFile, mkdir, rm, readdir, copyFile } from "node:fs/promises";
+import { existsSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const SRC  = join(ROOT, "src");
 
-const SKILL_NAME = "acuris-address";
+// Each entry: { name, srcDir, descriptionField (cursor-docs index group label) }
+const SKILLS = [
+  { name: "acuris-address", srcDir: "skill",      groupLabel: "Address Validation & Geocoding" },
+  { name: "acuris-eudi",    srcDir: "skill-eudi", groupLabel: "EUDI Wallet Verifier" },
+];
+
 const CHECK = process.argv.includes("--check");
 
 let stale = false;
@@ -35,7 +46,7 @@ async function main() {
   await validateSource();
 
   if (CHECK) {
-    await checkProjectionsFresh(version);
+    await checkProjectionsFresh();
     if (stale) {
       warn("Projections are stale relative to src/. Run `node scripts/build.mjs` and commit the result.");
       process.exit(1);
@@ -49,20 +60,22 @@ async function main() {
 }
 
 async function validateSource() {
-  const skillMd = await readFile(join(SRC, "skill/SKILL.md"), "utf8");
-  const fm = parseFrontmatter(skillMd);
-  if (!fm.frontmatter) throw new Error("SKILL.md missing YAML frontmatter");
-  for (const field of ["name", "description"]) {
-    if (!new RegExp(`^${field}:`, "m").test(fm.frontmatter)) {
-      throw new Error(`SKILL.md frontmatter missing required field: ${field}`);
+  for (const skill of SKILLS) {
+    const skillMd = await readFile(join(SRC, skill.srcDir, "SKILL.md"), "utf8");
+    const fm = parseFrontmatter(skillMd);
+    if (!fm.frontmatter) throw new Error(`${skill.srcDir}/SKILL.md missing YAML frontmatter`);
+    for (const field of ["name", "description"]) {
+      if (!new RegExp(`^${field}:`, "m").test(fm.frontmatter)) {
+        throw new Error(`${skill.srcDir}/SKILL.md missing required frontmatter field: ${field}`);
+      }
     }
-  }
-  const lineCount = skillMd.split("\n").length;
-  if (lineCount > 600) warn(`SKILL.md is ${lineCount} lines; recommended < 500.`);
+    const lineCount = skillMd.split("\n").length;
+    if (lineCount > 600) warn(`${skill.srcDir}/SKILL.md is ${lineCount} lines; recommended < 500.`);
 
-  for (const f of await readdir(join(SRC, "skill/references"))) {
-    const body = await readFile(join(SRC, "skill/references", f), "utf8");
-    if (body.length < 200) warn(`reference ${f} looks too small (${body.length} chars)`);
+    for (const f of await readdir(join(SRC, skill.srcDir, "references"))) {
+      const body = await readFile(join(SRC, skill.srcDir, "references", f), "utf8");
+      if (body.length < 200) warn(`${skill.srcDir}/references/${f} looks too small (${body.length} chars)`);
+    }
   }
 }
 
@@ -71,34 +84,40 @@ async function rebuild(version, skillPkg) {
     await rm(join(ROOT, d), { recursive: true, force: true });
   }
 
-  // 1. Open Agent Skill
-  const skillDst = join(ROOT, "agent-skill", SKILL_NAME);
-  await mkdir(join(skillDst, "references"), { recursive: true });
-  await copyDir(join(SRC, "skill"), skillDst);
+  // 1. Open Agent Skill package — one directory per skill
+  await mkdir(join(ROOT, "agent-skill"), { recursive: true });
   await writeFile(join(ROOT, "agent-skill/package.json"), JSON.stringify(skillPkg, null, 2) + "\n");
   await writeFile(join(ROOT, "agent-skill/README.md"), agentSkillReadme(version));
-  note(`Generated: agent-skill/${SKILL_NAME}/`);
+  for (const skill of SKILLS) {
+    const dst = join(ROOT, "agent-skill", skill.name);
+    await mkdir(join(dst, "references"), { recursive: true });
+    await copyDir(join(SRC, skill.srcDir), dst);
+    note(`Generated: agent-skill/${skill.name}/`);
+  }
 
-  // 2. skills/ alias for `npx skills add` auto-detection
-  const alias = join(ROOT, "skills", SKILL_NAME);
-  await mkdir(join(alias, "references"), { recursive: true });
-  await copyDir(join(SRC, "skill"), alias);
-  note(`Generated: skills/${SKILL_NAME}/ (alias for npx skills add)`);
+  // 2. skills/ aliases for `npx skills add` auto-detection
+  for (const skill of SKILLS) {
+    const dst = join(ROOT, "skills", skill.name);
+    await mkdir(join(dst, "references"), { recursive: true });
+    await copyDir(join(SRC, skill.srcDir), dst);
+    note(`Generated: skills/${skill.name}/ (alias for npx skills add)`);
+  }
 
-  // 3. Claude Code plugin
+  // 3. Claude Code plugin — single plugin bundling both skills
   const plugDir = join(ROOT, "claude-code-plugin");
-  const plugSkill = join(plugDir, "skills", SKILL_NAME);
   await mkdir(join(plugDir, ".claude-plugin"), { recursive: true });
-  await mkdir(join(plugSkill, "references"),  { recursive: true });
-  await copyDir(join(SRC, "skill"), plugSkill);
-
+  for (const skill of SKILLS) {
+    const plugSkill = join(plugDir, "skills", skill.name);
+    await mkdir(join(plugSkill, "references"), { recursive: true });
+    await copyDir(join(SRC, skill.srcDir), plugSkill);
+  }
   const pluginManifest = stampVersion(
     await readFile(join(SRC, "manifests/plugin.json"), "utf8"),
     version,
   );
   await writeFile(join(plugDir, ".claude-plugin/plugin.json"), pluginManifest);
   await writeFile(join(plugDir, "README.md"), pluginReadme(version));
-  note(`Generated: claude-code-plugin/`);
+  note(`Generated: claude-code-plugin/ (with ${SKILLS.length} skills)`);
 
   // 4. Repo-level marketplace
   const marketplace = stampVersion(
@@ -109,7 +128,7 @@ async function rebuild(version, skillPkg) {
   await writeFile(join(ROOT, ".claude-plugin/marketplace.json"), marketplace);
   note(`Generated: .claude-plugin/marketplace.json`);
 
-  // 5. Cursor docs: rules + flat docs
+  // 5. Cursor docs: rules + flat docs site
   await buildCursorDocs();
   note(`Generated: cursor-docs/`);
 }
@@ -124,68 +143,52 @@ async function buildCursorDocs() {
     await copyFile(join(SRC, "rules", f), join(out, "rules", f));
   }
 
-  // Docs: flatten SKILL.md + references, strip skill frontmatter, add a
-  // Jekyll page frontmatter so GitHub Pages renders them as HTML.
-  const skillBody = stripFrontmatter(await readFile(join(SRC, "skill/SKILL.md"), "utf8"));
-  await writeFile(
-    join(out, "docs/index.md"),
-    jekyllFrontmatter("Acuris agent context") + rewriteReferenceLinks(skillBody),
-  );
+  // Docs: address skill at /, EUDI under /eudi/
+  await emitSkillSiteSection(SKILLS[0], join(out, "docs"),     "index.md");
+  await mkdir(join(out, "docs/eudi"), { recursive: true });
+  await emitSkillSiteSection(SKILLS[1], join(out, "docs/eudi"), "index.md");
 
-  for (const f of await readdir(join(SRC, "skill/references"))) {
-    const body = stripFrontmatter(await readFile(join(SRC, "skill/references", f), "utf8"));
-    const title = humanizeFilename(f);
-    await writeFile(
-      join(out, "docs", f),
-      jekyllFrontmatter(title) + rewriteReferenceLinks(body),
-    );
-  }
-
-  // Minimal Jekyll config so GitHub Pages applies a theme + relative-link rewriting.
+  // _config.yml at site root
   await writeFile(join(out, "docs/_config.yml"), jekyllConfig());
+
+  // Landing index that links to both skills
+  await writeFile(join(out, "docs/landing.md"), landingPage());
 
   await writeFile(join(out, "README.md"), cursorDocsReadme());
 }
 
-function jekyllFrontmatter(title) {
-  return `---\nlayout: default\ntitle: ${JSON.stringify(title)}\n---\n\n`;
+async function emitSkillSiteSection(skill, outDir, indexName) {
+  const skillBody = stripFrontmatter(await readFile(join(SRC, skill.srcDir, "SKILL.md"), "utf8"));
+  await writeFile(
+    join(outDir, indexName),
+    jekyllFrontmatter(`${skill.name} — ${skill.groupLabel}`) + rewriteReferenceLinks(skillBody),
+  );
+
+  await mkdir(join(outDir, "references"), { recursive: true }).catch(() => {});
+  // Flat: put references next to the index for simpler relative-links
+  for (const f of await readdir(join(SRC, skill.srcDir, "references"))) {
+    const body = stripFrontmatter(await readFile(join(SRC, skill.srcDir, "references", f), "utf8"));
+    const title = humanizeFilename(f);
+    await writeFile(
+      join(outDir, f),
+      jekyllFrontmatter(title) + rewriteReferenceLinks(body),
+    );
+  }
 }
 
-function jekyllConfig() {
-  return [
-    "title: Acuris agent context",
-    "description: Agent-context documentation for the Acuris Address Validation & Geocoding APIs.",
-    "theme: jekyll-theme-cayman",
-    "plugins:",
-    "  - jekyll-relative-links",
-    "relative_links:",
-    "  enabled: true",
-    "  collections: true",
-    "include:",
-    "  - index.md",
-    "",
-  ].join("\n");
-}
-
-function humanizeFilename(name) {
-  return name
-    .replace(/\.md$/, "")
-    .split("-")
-    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-    .join(" ");
-}
-
-async function checkProjectionsFresh(version) {
-  const skillBody = await readFile(join(SRC, "skill/SKILL.md"), "utf8");
-  for (const target of [
-    `claude-code-plugin/skills/${SKILL_NAME}/SKILL.md`,
-    `agent-skill/${SKILL_NAME}/SKILL.md`,
-    `skills/${SKILL_NAME}/SKILL.md`,
-  ]) {
-    const p = join(ROOT, target);
-    if (!existsSync(p)) { stale = true; warn(`missing: ${target}`); continue; }
-    const have = await readFile(p, "utf8");
-    if (have !== skillBody) { stale = true; warn(`stale:   ${target}`); }
+async function checkProjectionsFresh() {
+  for (const skill of SKILLS) {
+    const skillBody = await readFile(join(SRC, skill.srcDir, "SKILL.md"), "utf8");
+    for (const target of [
+      `claude-code-plugin/skills/${skill.name}/SKILL.md`,
+      `agent-skill/${skill.name}/SKILL.md`,
+      `skills/${skill.name}/SKILL.md`,
+    ]) {
+      const p = join(ROOT, target);
+      if (!existsSync(p)) { stale = true; warn(`missing: ${target}`); continue; }
+      const have = await readFile(p, "utf8");
+      if (have !== skillBody) { stale = true; warn(`stale:   ${target}`); }
+    }
   }
 }
 
@@ -224,11 +227,58 @@ function stampVersion(json, version) {
   return json.replace(/\{\{VERSION\}\}/g, version);
 }
 
-function pluginReadme(version) {
-  return `# acuris-address — Claude Code plugin
+function jekyllFrontmatter(title) {
+  return `---\nlayout: default\ntitle: ${JSON.stringify(title)}\n---\n\n`;
+}
 
-Acuris Address Validation & Geocoding agent context, packaged as a
-Claude Code plugin. Version ${version}.
+function jekyllConfig() {
+  return [
+    "title: Acuris agent context",
+    "description: Agent-context documentation for the Acuris Address Validation, Geocoding, and EUDI Wallet Verifier APIs.",
+    "theme: jekyll-theme-cayman",
+    "plugins:",
+    "  - jekyll-relative-links",
+    "relative_links:",
+    "  enabled: true",
+    "  collections: true",
+    "include:",
+    "  - index.md",
+    "  - eudi",
+    "",
+  ].join("\n");
+}
+
+function humanizeFilename(name) {
+  return name
+    .replace(/\.md$/, "")
+    .split("-")
+    .map((s) => {
+      const upper = s.toLowerCase();
+      if (["api", "eudi", "mtls", "sdk", "oid4vp", "tsl", "lotl", "crl"].includes(upper)) return upper.toUpperCase();
+      return s.charAt(0).toUpperCase() + s.slice(1);
+    })
+    .join(" ");
+}
+
+function landingPage() {
+  return `---
+layout: default
+title: "Acuris agent context"
+---
+
+# Acuris agent context
+
+Two skills available. Pick the one that matches what you're building.
+
+- **[Address Validation & Geocoding](index.md)** (\`acuris-address\`) — when wiring address autocomplete, validation, forward/reverse geocoding, or migrating from libAddressDoctor / Loqate / Experian QAS / Melissa / Smarty.
+- **[EUDI Wallet Verifier](eudi/index.md)** (\`acuris-eudi\`) — when integrating EU Digital Identity Wallet (OID4VP / SD-JWT VC) verification into a bank KYC or branch onboarding flow.
+`;
+}
+
+function pluginReadme(version) {
+  return `# Acuris — Claude Code plugin
+
+Two Acuris skills bundled into one Claude Code plugin. Version ${version}.
 
 ## Install
 
@@ -236,7 +286,7 @@ From this repo's marketplace:
 
 \`\`\`text
 /plugin marketplace add Acuris-GmbH/acuris-agent-context
-/plugin install acuris-address@acuris-plugins
+/plugin install acuris@acuris-plugins
 \`\`\`
 
 Or for local development:
@@ -245,32 +295,36 @@ Or for local development:
 claude --plugin-dir ./claude-code-plugin
 \`\`\`
 
-## What's inside
+## Skills inside
 
-- \`skills/acuris-address/SKILL.md\` — primary skill entry point.
-- \`skills/acuris-address/references/\` — recipe library (autocomplete,
-  validation, geocoding, batch cleanup, Next.js proxy, Centra, and five
-  vendor migration recipes).
+- **\`acuris-address\`** — Address Validation & Geocoding APIs.
+  Activates on address autocomplete, validation, geocoding, reverse
+  geocoding, batch cleanup, or migrations from libAddressDoctor,
+  Loqate, Experian QAS, Melissa, Smarty.
+- **\`acuris-eudi\`** — EUDI Wallet Verifier. Activates on EU Digital
+  Identity Wallet, OID4VP, SD-JWT VC, presentation_definition, PID
+  address verification, relying-party backend integration.
 
-## Triggers
-
-The skill auto-activates when the user mentions address autocomplete,
-validation, geocoding, reverse geocoding, the \`@acuris-geo/av-sdk\`
-package, the \`AcurisClient\` symbol, or migration from libAddressDoctor,
-Loqate, Experian QAS, Melissa, or Smarty.
+Each skill loads independently when the user's task matches its
+description. Reference recipes load on demand.
 `;
 }
 
 function agentSkillReadme(version) {
-  return `# acuris-address — Open Agent Skill
+  return `# Acuris — Open Agent Skill package
 
-Acuris Address Validation & Geocoding agent context in the open
-[Agent Skills](https://agentskills.io) format. Version ${version}.
+Acuris agent skills in the open [Agent Skills](https://agentskills.io)
+format. Version ${version}.
+
+Two skills shipped:
+
+- \`acuris-address/\` — Address Validation & Geocoding.
+- \`acuris-eudi/\` — EUDI Wallet Verifier.
 
 ## Install
 
 \`\`\`bash
-# Interactive — pick your agent:
+# Interactive — pick your agent and which skill(s):
 npx skills add Acuris-GmbH/acuris-agent-context
 
 # Specific agent:
@@ -287,9 +341,9 @@ See <https://agentskills.io> for the full list of compatible tools.
 
 ## What's inside
 
-\`acuris-address/\` contains \`SKILL.md\` + \`references/\` in the canonical
-Anthropic skill format. The CLI copies it into the right host-specific
-path for your agent.
+Each skill directory contains \`SKILL.md\` + \`references/\` in the
+canonical Anthropic skill format. The CLI copies it into the right
+host-specific path for your agent.
 `;
 }
 
@@ -308,18 +362,18 @@ mkdir -p .cursor/rules
 cp -r path/to/acuris-agent-context/cursor-docs/rules/*.mdc .cursor/rules/
 \`\`\`
 
-The rules activate automatically when you edit:
+Rules supplied:
 
-- \`acuris-overview.mdc\` — agent-selected; pulled in whenever the model
-  decides Acuris is relevant.
-- \`acuris-autocomplete.mdc\` — auto-attached on files matching
-  \`**/checkout/**/*.{tsx,jsx}\`, \`**/address/**/*.{tsx,jsx}\`,
-  \`**/*Autocomplete*\`, \`**/api/**/{address,suggest,autocomplete}*\`.
-- \`acuris-validation.mdc\` — auto-attached on files matching
-  \`**/api/**/{address,validate,checkout,orders,customers}*\`,
-  \`**/server/**/*{address,checkout}*\`, \`**/*AddressValidator*\`.
-- \`acuris-migration.mdc\` — manual via \`@acuris-migration\` mention,
-  when porting code from another AV vendor.
+- \`acuris-overview.mdc\` — agent-selected; pulled in whenever the
+  model decides Acuris is relevant.
+- \`acuris-autocomplete.mdc\` — auto-attached on React checkout/address
+  files.
+- \`acuris-validation.mdc\` — auto-attached on server-side address
+  routes.
+- \`acuris-migration.mdc\` — manual via \`@acuris-migration\`, for
+  porting from other AV vendors.
+- \`acuris-eudi.mdc\` — agent-selected; pulled in for EUDI Wallet /
+  OID4VP / SD-JWT VC / bank KYC integration work.
 
 ## 2. @Docs (cloud-indexed external documentation)
 
@@ -333,14 +387,13 @@ Use this URL:
 https://acuris-gmbh.github.io/acuris-agent-context/
 \`\`\`
 
-(Available once GitHub Pages is enabled on the repo. The published
-site is a flat copy of the same skill + references, hosted by the
-\`docs/\` directory in this folder.)
+The published site covers both the Address skill (root) and the EUDI
+skill (\`/eudi/\`).
 
 ## 3. Cursor as an Agent Skills client
 
-Cursor supports the open Agent Skills format natively. To install the
-full skill (not just the rules):
+Cursor supports the open Agent Skills format natively. To install one
+or both skills:
 
 \`\`\`bash
 npx skills add Acuris-GmbH/acuris-agent-context -a cursor
