@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.2.3 — 2026-07-19
+
+- **UK (`gbr`) is now fully supported — corrected outdated guidance.**
+  Previous versions said Acuris held no Royal Mail PAF licence and told
+  integrators to omit UK from every picker. UK coverage is PAF-backed
+  (flagship dataset): `/validate` and `/suggest` support `gbr`,
+  `standardized` carries `udprn` / `uprn` / traditional `county`, and
+  `POST /postcode-lookup` expands a full UK postcode. Common Mistake #10
+  rewritten; `acuris-overview.mdc` rule flipped from "never list gbr"
+  to "include gbr".
+- **Autocomplete set is 7 countries, not 5.** `gbr` and `jpn` now have
+  `/suggest` wired. `AUTOCOMPLETE_COUNTRIES` updated everywhere
+  (SKILL.md, `references/autocomplete.md`, both Cursor rules).
+- API reference: documented `POST /postcode-lookup` (UK delivery-point
+  expansion), `POST /email-validate` (+ batch and async jobs), and the
+  UK-only `standardized.county` / `udprn` / `uprn` fields.
+
 ## 0.2.2 — 2026-05-17
 
 - **Distinguish autocomplete coverage from validation coverage.**

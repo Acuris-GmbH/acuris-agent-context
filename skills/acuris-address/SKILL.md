@@ -205,14 +205,16 @@ Avoid them.
    [`references/autocomplete.md`](./references/autocomplete.md) — the
    "What autocomplete is and is not" section at the top covers this.
 
-10. **Listing the United Kingdom (`gbr`) in a country picker.** Acuris
-   does not currently hold a Royal Mail PAF (Postcode Address File)
-   licence, which is required for commercial use of UK address data.
-   `/validate` and `/suggest` may return technically-shaped results for
-   `gbr` inputs, but **shipping UK in a customer-facing country picker
-   exposes the integrator (and Acuris) to licensing liability**. Until
-   that licence is in place, omit `gbr` from any demo, autocomplete
-   country list, or `requested_fields` country set.
+10. **Omitting the United Kingdom (`gbr`) from country pickers.**
+   Earlier versions of this skill said Acuris lacked a Royal Mail PAF
+   (Postcode Address File) licence and told you to leave UK out
+   everywhere. That is outdated: UK coverage is now PAF-backed and a
+   flagship dataset — `/validate` and `/suggest` fully support `gbr`
+   (street-based autocomplete; `standardized` carries `udprn`, `uprn`
+   and traditional `county`), and `POST /postcode-lookup` returns every
+   delivery point at a UK postcode. Include `gbr` in demos and country
+   pickers. PAF usage terms apply:
+   https://api.acuris-geo.com/legal/paf-terms.
 
 11. **Listing a country in an autocomplete picker that doesn't have
    `/suggest` wired.** This is the most common source of an
@@ -220,16 +222,18 @@ Avoid them.
    `/geocode` / `/reverse` cover different country sets.** Validation
    and geocoding work against 200+ ISO-3 codes; autocomplete requires
    per-country NORM columns + indexes (a separate engineering step)
-   and currently runs for only 5 countries:
+   and currently runs for only 7 countries:
 
    ```ts
-   // The ONLY countries with /suggest wired (as of 0.2.2):
+   // The ONLY countries with /suggest wired:
    const AUTOCOMPLETE_COUNTRIES = [
      { code: "usa", label: "United States" },
+     { code: "gbr", label: "United Kingdom" },  // Royal Mail PAF (street-based)
      { code: "deu", label: "Germany" },
      { code: "nld", label: "Netherlands" },
      { code: "fin", label: "Finland" },
      { code: "swe", label: "Sweden" },
+     { code: "jpn", label: "Japan" },
    ];
    ```
 
@@ -246,10 +250,12 @@ Avoid them.
    const VALIDATION_COUNTRIES = [
      // Autocomplete-enabled subset:
      { code: "usa", label: "United States" },
+     { code: "gbr", label: "United Kingdom" },
      { code: "deu", label: "Germany" },
      { code: "nld", label: "Netherlands" },
      { code: "fin", label: "Finland" },
      { code: "swe", label: "Sweden" },
+     { code: "jpn", label: "Japan" },
      // Validation/geocoding-only (NOT autocomplete):
      { code: "fra", label: "France" },
      { code: "esp", label: "Spain" },
@@ -262,7 +268,6 @@ Avoid them.
      { code: "prt", label: "Portugal" },
      { code: "aus", label: "Australia" },
      { code: "nzl", label: "New Zealand" },
-     { code: "jpn", label: "Japan" },
      { code: "sgp", label: "Singapore" },
      { code: "bra", label: "Brazil" },
      { code: "mex", label: "Mexico" },
@@ -272,13 +277,13 @@ Avoid them.
 
    **Rules of thumb:**
    - If the UI uses `<AcurisAddressInput>` (typeahead): use
-     `AUTOCOMPLETE_COUNTRIES` (the 5).
+     `AUTOCOMPLETE_COUNTRIES` (the 7).
    - If the UI uses `<AcurisAddressValidator>` or any structured form
      that hits `/validate` / `/geocode` / `/reverse`: either list is
      fine.
    - Mixed (autocomplete + validation in the same form, same country
      picker): use `AUTOCOMPLETE_COUNTRIES`. The validation set is a
-     superset; user can still validate any of those 5.
+     superset; user can still validate any of those 7.
 
    The autocomplete-enabled set grows as new countries get NORM
    columns. If this list looks stale, ask before extending it.

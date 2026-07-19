@@ -5,7 +5,9 @@ title: "API Reference"
 
 # API reference
 
-Authoritative request/response shapes for the four Acuris endpoints, the
+Authoritative request/response shapes for the core Acuris endpoints
+(validate / geocode / reverse / suggest, plus UK postcode lookup and
+email validation), the
 client configuration surface, and the error hierarchy. Derived from the
 `@acuris-geo/av-sdk` TypeScript types — those are the source of truth
 if anything here drifts.
@@ -160,6 +162,7 @@ Field meanings:
 | `corrections`             | Human-readable list of what Acuris changed, if anything.|
 | `lat` / `lng`             | Forward-geocoded coords when available.                 |
 | `house_number_not_found`  | True if house-level coords weren't found and a coarser tier was returned. |
+| `standardized.county` / `standardized.udprn` / `standardized.uprn` | **UK only** (`country: "gbr"`). Traditional county + Royal Mail UDPRN + Ordnance Survey UPRN, from Royal Mail PAF / OS Open UPRN. |
 
 ## `GET /geocode` — forward geocode (fielded only)
 
@@ -264,6 +267,77 @@ Optional `state` (`USA` / `CAN` / `AUS` / ...) biases results.
 
 The SDK returns the bare `SuggestionHit[]` array (it unwraps
 `suggestions`). Empty arrays come back as `[]` (not null).
+
+## `POST /postcode-lookup` — every address at a UK postcode (Royal Mail PAF)
+
+UK-only. Returns every delivery point at a postcode, backed by the official
+Royal Mail Postcode Address File. Each address carries the Royal Mail `udprn`,
+the Ordnance Survey `uprn`, the traditional `county`, and rooftop coordinates
+when available. **Charges 1 validation credit per call**, regardless of the
+number of addresses returned.
+
+```json
+POST /postcode-lookup
+{ "postcode": "SW1A 2AA", "country": "gbr" }
+```
+
+```json
+{
+  "postcode": "SW1A 2AA",
+  "country": "gbr",
+  "count": 2,
+  "addresses": [
+    {
+      "street": "Downing Street", "house_number": "10",
+      "building_name": "", "organisation_name": "Prime Minister & First Lord Of The Treasury",
+      "city": "London", "postcode": "SW1A 2AA", "county": "Greater London",
+      "udprn": "23747771", "uprn": "100023336956",
+      "lat": 51.50344, "lng": -0.12770, "accuracy_type": "rooftop"
+    }
+  ]
+}
+```
+
+Results are capped (default 100); `"truncated": true` is set when the cap is
+hit. A per-IP velocity cap also applies (the dataset is licensed). Returns
+`404` when the postcode isn't found, `403` on insufficient credits.
+
+## `POST /email-validate` — email deliverability
+
+Checks format, DNS MX, and disposable / role / free-provider flags, plus a
+`did_you_mean` typo suggestion. Email verifications draw on a **separate credit
+pool** from address validation and geocoding (1 email credit per call).
+
+**Bulk / async.** `POST /email-validate/batch` validates up to **1,000** emails
+synchronously (charged atomically). For larger lists — or webhook delivery —
+use the **async** `POST /email-validate/jobs` (up to **10,000** per job): it
+returns a `job_id` (HTTP 202); poll `GET /email-validate/jobs/{job_id}` for
+`status` (`queued` / `processing` / `done` / `error`) and, once `done`, the
+per-email `results` — or pass `webhook_url` for a completion callback. Async
+jobs require an API key and run on the main box only.
+
+```json
+POST /email-validate
+{ "email": "user@example.com" }
+```
+
+```json
+{
+  "email": "user@example.com",
+  "deliverable": "deliverable",
+  "score": 0.95,
+  "format_valid": true,
+  "domain_has_mx": true,
+  "is_disposable": false,
+  "is_role": false,
+  "is_free": false,
+  "did_you_mean": null,
+  "mx_record": "aspmx.l.google.com",
+  "reasons": []
+}
+```
+
+`deliverable` is one of `deliverable` / `risky` / `undeliverable` / `unknown`.
 
 ## Errors
 

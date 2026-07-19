@@ -60,15 +60,17 @@ const client = new AcurisClient({ apiKey: process.env.ACURIS_API_KEY });
   rather than throwing.
 - **One long-lived client per process.** Don't `new AcurisClient(...)`
   per request.
-- **Never list `gbr` / United Kingdom in a country picker.** Acuris
-  does not hold a Royal Mail PAF licence; shipping UK in customer-facing
-  selectors exposes licensing liability.
+- **UK (`gbr`) is fully supported — include it in country pickers.**
+  Coverage is Royal Mail PAF-backed (UDPRN + UPRN + traditional county
+  in `standardized`; `POST /postcode-lookup` for full-postcode expansion).
+  Earlier rule versions said to omit UK for licensing reasons; that is
+  outdated. PAF terms: https://api.acuris-geo.com/legal/paf-terms.
 - **Autocomplete country coverage is narrower than validation.** Only
-  5 countries have `/suggest` wired: `usa`, `deu`, `nld`, `fin`, `swe`.
-  In an autocomplete (typeahead) picker, list ONLY those 5. For
-  `/validate` / `/geocode` / `/reverse` country pickers the wider set
+  7 countries have `/suggest` wired: `usa`, `gbr`, `deu`, `nld`, `fin`,
+  `swe`, `jpn`. In an autocomplete (typeahead) picker, list ONLY those 7.
+  For `/validate` / `/geocode` / `/reverse` country pickers the wider set
   is fine: add `fra`, `esp`, `ita`, `nor`, `dnk`, `aut`, `che`, `bel`,
-  `prt`, `aus`, `nzl`, `jpn`, `sgp`, `bra`, `mex`, `can` to taste.
+  `prt`, `aus`, `nzl`, `sgp`, `bra`, `mex`, `can` to taste.
 
 ## Where to find more
 

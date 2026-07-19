@@ -2,15 +2,17 @@
 
 ## ⚠️ Country coverage for autocomplete is narrower than for validation
 
-**Only 5 countries currently have `/suggest` (autocomplete) wired:**
+**Only 7 countries currently have `/suggest` (autocomplete) wired:**
 
 ```ts
 const AUTOCOMPLETE_COUNTRIES = [
   { code: "usa", label: "United States" },
+  { code: "gbr", label: "United Kingdom" },  // Royal Mail PAF (street-based)
   { code: "deu", label: "Germany" },
   { code: "nld", label: "Netherlands" },
   { code: "fin", label: "Finland" },
   { code: "swe", label: "Sweden" },
+  { code: "jpn", label: "Japan" },
 ];
 ```
 
@@ -27,7 +29,7 @@ possible UX.
 
 If you're building a form that *also* validates on submit (a checkout
 flow with `<AcurisAddressInput>` for typing + `<AcurisAddressValidator>`
-for submit), the autocomplete-enabled 5 are still the right set —
+for submit), the autocomplete-enabled 7 are still the right set —
 they're a strict subset of the validation-enabled set, so validation
 works for all of them.
 
