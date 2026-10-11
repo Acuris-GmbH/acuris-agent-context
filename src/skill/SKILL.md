@@ -176,7 +176,12 @@ Avoid them.
    The SDK sets the right header automatically; if you're hand-rolling
    HTTP for any reason, the header name matters.
 
-4. **Treating `accuracy_type` as a closed enum.** New tiers are added
+4. **Treating `accuracy_type` as a closed enum.** Branch on the boolean
+   `point_coordinate` (true for `rooftop` and `arrival_point`, false for every
+   area/derived tier) instead of comparing `accuracy_type` to literals. A
+   literal comparison silently reclassifies each newly-added tier as imprecise
+   — that is how a verified address with a surveyed access point ends up
+   treated as a failed match. New tiers are added
    over time (`street_interpolated`, `street_center`, `locality_centroid`,
    …). Always handle the documented values explicitly and pass through
    unknown values as opaque rather than throwing.

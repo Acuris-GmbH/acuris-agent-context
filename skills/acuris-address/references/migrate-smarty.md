@@ -38,6 +38,22 @@ GET https://us-street.api.smarty.com/street-address
 ### After
 
 ```ts
+// Branch on this, never on an accuracy_type literal. Acuris adds tiers over
+// time; a literal comparison silently reclassifies each new one as imprecise.
+// `point_coordinate` is true when the coordinate identifies ONE address —
+// today `rooftop` (a point on the building) or `arrival_point` (its entrance /
+// access point). The fallback covers API builds older than 2026-08.
+const AREA_TIERS = new Set([
+  "street_interpolated", "street_centroid",
+  "postcode_centroid", "locality_centroid", "admin_centroid",
+]);
+const isPointCoordinate = (r: { accuracy_type?: string | null; point_coordinate?: boolean }) =>
+  typeof r.point_coordinate === "boolean"
+    ? r.point_coordinate
+    : !!r.accuracy_type && !AREA_TIERS.has(r.accuracy_type);
+```
+
+```ts
 import { AcurisClient, validateAddress } from "@acuris-geo/av-sdk";
 
 const client = new AcurisClient({ apiKey: process.env.ACURIS_API_KEY });
@@ -155,20 +171,29 @@ or `precision` (`Zip5`/`Zip7`/`Zip9`/`Structure`/`Rooftop`):
 ```ts
 function toSmartyPrecision(a: string | null): string {
   switch (a) {
-    case "rooftop":              return "Rooftop";
+    // Both Acuris point tiers map to Smarty "Rooftop": Smarty has no separate
+    // arrival-point concept, and an arrival point is address-level either way.
+    case "rooftop":
+    case "arrival_point":        return "Rooftop";
     case "parcel":               return "Parcel";
     case "street_interpolated":  return "Zip9";
+    case "street_centroid":
     case "street_center":        return "Zip7";
+    case "postcode_centroid":
     case "postcode":             return "Zip7";
     case "postcode_center":      return "Zip5";
     case "locality_centroid":
+    case "admin_centroid":
     case "centroid":             return "State";
+    // A tier we have not mapped yet. "Unknown" is honest — do NOT fall back to
+    // a precise Smarty code, which would overstate, or to a no-match code,
+    // which would discard a good result.
     default:                     return "Unknown";
   }
 }
 
 function toDpvMatchCode(r: import("@acuris-geo/av-sdk").ValidationResult): "Y"|"N"|"S"|"D" {
-  if (r.match_components.house_number && r.accuracy_type === "rooftop") return "Y";
+  if (r.match_components.house_number && isPointCoordinate(r)) return "Y";
   if (r.match_components.house_number)                                  return "S";  // street ok, premise approximate
   if (r.accuracy_type === null)                                         return "N";
   return "D";  // default street, no premise number

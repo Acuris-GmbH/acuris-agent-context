@@ -50,6 +50,22 @@ AD_Free(r);
 ## After — Node service equivalent
 
 ```ts
+// Branch on this, never on an accuracy_type literal. Acuris adds tiers over
+// time; a literal comparison silently reclassifies each new one as imprecise.
+// `point_coordinate` is true when the coordinate identifies ONE address —
+// today `rooftop` (a point on the building) or `arrival_point` (its entrance /
+// access point). The fallback covers API builds older than 2026-08.
+const AREA_TIERS = new Set([
+  "street_interpolated", "street_centroid",
+  "postcode_centroid", "locality_centroid", "admin_centroid",
+]);
+const isPointCoordinate = (r: { accuracy_type?: string | null; point_coordinate?: boolean }) =>
+  typeof r.point_coordinate === "boolean"
+    ? r.point_coordinate
+    : !!r.accuracy_type && !AREA_TIERS.has(r.accuracy_type);
+```
+
+```ts
 import {
   AcurisClient,
   validateAddress,
@@ -71,9 +87,10 @@ interface IdqLikeOutput {
   match_components: { city: boolean; house_number: boolean; street: boolean; postcode: boolean; state: boolean };
 }
 
-function mapStatus(accuracy: string | null, confidence: number): IdqLikeOutput["v_status"] {
-  if (!accuracy)                                       return "NO_MATCH";
-  if (confidence >= 0.9 && accuracy === "rooftop")     return "FULL";
+function mapStatus(r: { accuracy_type: string | null; point_coordinate?: boolean },
+                  confidence: number): IdqLikeOutput["v_status"] {
+  if (!r.accuracy_type)                                return "NO_MATCH";
+  if (confidence >= 0.9 && isPointCoordinate(r))       return "FULL";
   if (confidence >= 0.75)                              return "PARTIAL";
   if (confidence >= 0.4)                               return "AMBIGUOUS";
   return "NO_MATCH";
@@ -136,7 +153,7 @@ Customer Java code that currently reads `r.getStatus().getCode() == V_FULL_MATCH
 
 ```ts
 // Faithful to the IDQ status hierarchy
-const isFullMatch    = r.accuracy_type === "rooftop" && r.confidence >= 0.9;
+const isFullMatch    = isPointCoordinate(r) && r.confidence >= 0.9;
 const isPartialMatch = r.confidence >= 0.6 && !isFullMatch;
 const isAmbiguous    = r.confidence >= 0.4 && !isPartialMatch && !isFullMatch;
 const isNoMatch      = !isFullMatch && !isPartialMatch && !isAmbiguous;

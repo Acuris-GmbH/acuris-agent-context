@@ -49,6 +49,22 @@ canonical address.
 ## After — Acuris (one round-trip)
 
 ```ts
+// Branch on this, never on an accuracy_type literal. Acuris adds tiers over
+// time; a literal comparison silently reclassifies each new one as imprecise.
+// `point_coordinate` is true when the coordinate identifies ONE address —
+// today `rooftop` (a point on the building) or `arrival_point` (its entrance /
+// access point). The fallback covers API builds older than 2026-08.
+const AREA_TIERS = new Set([
+  "street_interpolated", "street_centroid",
+  "postcode_centroid", "locality_centroid", "admin_centroid",
+]);
+const isPointCoordinate = (r: { accuracy_type?: string | null; point_coordinate?: boolean }) =>
+  typeof r.point_coordinate === "boolean"
+    ? r.point_coordinate
+    : !!r.accuracy_type && !AREA_TIERS.has(r.accuracy_type);
+```
+
+```ts
 import { AcurisClient, validateAddress } from "@acuris-geo/av-sdk";
 
 const client = new AcurisClient({ apiKey: process.env.ACURIS_API_KEY });
@@ -83,8 +99,7 @@ type QASStatus = "verified_match" | "interaction_required" | "premises_partial"
 
 function toQASStatus(a: string | null, c: number): QASStatus {
   if (!a)                                  return "no_matches";
-  if (a === "rooftop"  && c >= 0.9)        return "verified_match";
-  if (a === "parcel"   && c >= 0.85)       return "verified_match";
+  if (isPointCoordinate(r) && c >= 0.9)    return "verified_match";
   if (a === "street_interpolated")         return "premises_partial";
   if (a === "street_center")               return "street_partial";
   if (c < 0.4)                             return "no_matches";
@@ -96,7 +111,7 @@ If your downstream code branches on `verification_level` letter codes:
 
 | QAS letter | Acuris equivalent                                              |
 | ---------- | -------------------------------------------------------------- |
-| `V`erified  | `accuracy_type` ∈ {`rooftop`, `parcel`} AND `confidence ≥ 0.9` |
+| `V`erified  | `point_coordinate === true` AND `confidence ≥ 0.9`            |
 | `P`artial   | `street_interpolated` or `confidence` in `[0.5, 0.9)`         |
 | `U`nverified | `centroid` / `country` / `confidence < 0.5`                  |
 | `R`eview   | `input_corrected === true`                                     |

@@ -155,7 +155,8 @@ Field meanings:
 
 | Field                     | What it tells you                                       |
 | ------------------------- | ------------------------------------------------------- |
-| `accuracy_type`           | Precision bucket (`rooftop`, `parcel`, `street_interpolated`, `street_center`, `postcode`, `locality_centroid`, `centroid`, `country`, ...). Open enum. |
+| `accuracy_type`           | What the coordinate represents. **Point coordinates:** `rooftop`, `arrival_point`. **Derived:** `street_interpolated`, `street_centroid`, `postcode_centroid`, `locality_centroid`, `admin_centroid`. Open set — pass unknown values through. |
+| `point_coordinate`        | Boolean; `true` for a coordinate that identifies one address. **Branch on this, not on `accuracy_type` literals.** |
 | `confidence`              | 0..1. Higher = more confident the match represents the user's intent. |
 | `match_type`              | `exact` / `interpolated` / `partial` / `no_match` / `rooftop`. |
 | `match_components`        | Per-field booleans — which components matched.          |
@@ -163,6 +164,7 @@ Field meanings:
 | `standardized`            | Canonical form. Use `formatted_address` for display.    |
 | `corrections`             | Human-readable list of what Acuris changed, if anything.|
 | `lat` / `lng`             | Forward-geocoded coords when available.                 |
+| `arrival_point`           | `{ "lat", "lng" }` — the matched premise's entrance/access coordinate, beside the served pin. On `accuracy_type: rooftop` it is the door/curb point of the same address (delivery/navigation); on `accuracy_type: arrival_point` it equals `lat`/`lng`. Only on house-number-level matches with an arrival point on file; omitted otherwise — never null. Also returned by `/geocode`. |
 | `house_number_not_found`  | True if house-level coords weren't found and a coarser tier was returned. |
 | `standardized.county` / `standardized.udprn` / `standardized.uprn` | **UK only** (`country: "gbr"`). Traditional county + Royal Mail UDPRN + Ordnance Survey UPRN, from Royal Mail PAF / OS Open UPRN. |
 

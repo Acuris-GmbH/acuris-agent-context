@@ -45,6 +45,22 @@ GET https://address.melissadata.net/v3/WEB/GlobalAddress/doGlobalAddress
 
 Response:
 
+```js
+// Branch on this, never on an accuracy_type literal. Acuris adds tiers over
+// time; a literal comparison silently reclassifies each new one as imprecise.
+// `point_coordinate` is true when the coordinate identifies ONE address —
+// today `rooftop` (a point on the building) or `arrival_point` (its entrance /
+// access point). The fallback covers API builds older than 2026-08.
+const AREA_TIERS = new Set([
+  "street_interpolated", "street_centroid",
+  "postcode_centroid", "locality_centroid", "admin_centroid",
+]);
+const isPointCoordinate = (r) =>
+  typeof r.point_coordinate === "boolean"
+    ? r.point_coordinate
+    : !!r.accuracy_type && !AREA_TIERS.has(r.accuracy_type);
+```
+
 ```json
 {
   "Version": "5.0.0.7",
@@ -92,12 +108,12 @@ const melissaShape = {
 function meltdownResultCodes(r: import("@acuris-geo/av-sdk").ValidationResult): string {
   const codes: string[] = [];
   // AV: address verification
-  if (r.accuracy_type === "rooftop" || r.accuracy_type === "parcel") codes.push("AV25");
+  if (isPointCoordinate(r)) codes.push("AV25");
   else if (r.accuracy_type?.startsWith("street"))                    codes.push("AV24");
   else                                                                codes.push("AV12");
   // GS: geocode status
   if (r.lat != null && r.lng != null) {
-    if (r.accuracy_type === "rooftop") codes.push("GS01");
+    if (isPointCoordinate(r)) codes.push("GS01");
     else                                codes.push("GS02");
   } else                                codes.push("GS05");
   // AC: any change made by verification engine
@@ -112,11 +128,11 @@ Common Melissa codes you'll see in legacy branching:
 
 | Melissa code | Meaning                              | Acuris condition                                       |
 | ------------ | ------------------------------------ | ------------------------------------------------------ |
-| `AV25`       | Verified to subpremise / building    | `accuracy_type` in {`rooftop`, `parcel`}               |
+| `AV25`       | Verified to subpremise / building    | `point_coordinate === true` (rooftop or arrival point) |
 | `AV24`       | Verified to thoroughfare             | `accuracy_type` in {`street_interpolated`, `street_center`} |
 | `AV23`       | Verified to locality                 | `accuracy_type` in {`locality`, `locality_centroid`}   |
 | `AV12`       | No / weak match                      | `accuracy_type === null` or `confidence < 0.4`         |
-| `GS01`       | Address-level geocode                | `lat`/`lng` present and `accuracy_type === "rooftop"`  |
+| `GS01`       | Address-level geocode                | `lat`/`lng` present and `point_coordinate === true`    |
 | `GS02`       | Street-level geocode                 | `lat`/`lng` present and `accuracy_type.startsWith("street")` |
 | `GS05`       | No geocode                           | `lat == null`                                          |
 | `AC01`       | Field standardized                   | `input_corrected === true`                             |

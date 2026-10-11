@@ -20,7 +20,7 @@ Both map cleanly onto Acuris endpoints.
 | `Country` (ISO-2 or ISO-3)              | ISO-3 lowercase, required                             |
 | `AQI` (Address Quality Index, 1-5)      | `confidence` (0..1) + `accuracy_type`                 |
 | `Container` (cascading session)         | Not needed — Acuris suggestions are flat              |
-| `Verification Level` (V1-V5)            | `accuracy_type` (`rooftop` > `parcel` > `street_*` …) |
+| `Verification Level` (V1-V5)            | `point_coordinate` first, then `accuracy_type` (`rooftop` / `arrival_point` > `street_*` …) |
 
 ## Capture — autocomplete + retrieve
 
@@ -40,6 +40,22 @@ Both map cleanly onto Acuris endpoints.
 
 Backend routes from [`nextjs-proxy.md`](./nextjs-proxy.md), then in
 your React form:
+
+```ts
+// Branch on this, never on an accuracy_type literal. Acuris adds tiers over
+// time; a literal comparison silently reclassifies each new one as imprecise.
+// `point_coordinate` is true when the coordinate identifies ONE address —
+// today `rooftop` (a point on the building) or `arrival_point` (its entrance /
+// access point). The fallback covers API builds older than 2026-08.
+const AREA_TIERS = new Set([
+  "street_interpolated", "street_centroid",
+  "postcode_centroid", "locality_centroid", "admin_centroid",
+]);
+const isPointCoordinate = (r: { accuracy_type?: string | null; point_coordinate?: boolean }) =>
+  typeof r.point_coordinate === "boolean"
+    ? r.point_coordinate
+    : !!r.accuracy_type && !AREA_TIERS.has(r.accuracy_type);
+```
 
 ```tsx
 import {
@@ -107,7 +123,7 @@ const out = {
 
 function loqateVerificationLevel(a: string | null): "V1"|"V2"|"V3"|"V4"|"V5" {
   switch (a) {
-    case "rooftop": case "parcel":      return "V5";
+    default: if (isPointCoordinate(r)) return "V5";
     case "street_interpolated":         return "V4";
     case "street_center": case "postcode": return "V3";
     case "postcode_center":             return "V2";

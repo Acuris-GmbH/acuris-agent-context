@@ -35,7 +35,7 @@ status hierarchies:
 
 | Generic bucket          | Vendor equivalent                                      | Acuris condition                                       |
 | ----------------------- | ------------------------------------------------------ | ------------------------------------------------------ |
-| Verified to premise     | QAS `V`, Loqate `V5`, Melissa `AV25`, Smarty `Rooftop` | `accuracy_type ∈ {rooftop, parcel}` AND `confidence ≥ 0.9` |
+| Verified to premise     | QAS `V`, Loqate `V5`, Melissa `AV25`, Smarty `Rooftop` | `point_coordinate === true` AND `confidence ≥ 0.9` |
 | Verified to street      | QAS `P`, Loqate `V4`, Melissa `AV24`, Smarty `Zip9`    | `accuracy_type ∈ {street_interpolated, street_center}` |
 | Verified to locality    | QAS `R`, Melissa `AV23`                                | `accuracy_type ∈ {postcode, locality, locality_centroid}` |
 | No / weak match         | QAS `U`, Loqate `V1`, Melissa `AV12`, Smarty `Unknown` | `accuracy_type === null` or `confidence < 0.4`         |
