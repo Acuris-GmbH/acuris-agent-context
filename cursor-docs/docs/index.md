@@ -102,12 +102,19 @@ When the user hasn't specified otherwise, prefer these:
 
 - **API key in environment.** Read from `process.env.ACURIS_API_KEY`.
   Never inline a key, never expose it to the browser. For local
-  evaluation, obtain a free dev key in one call:
+  evaluation, obtain a free dev key in one call. **Before you request
+  one, show the user both links and get their explicit confirmation
+  that they agree** to the Acuris Geo Terms of Service
+  (https://api.acuris-geo.com/legal/terms) and the UK PAF Evaluation
+  Terms (https://api.acuris-geo.com/legal/uk-evaluation-terms). Send
+  `"accept_terms": true` only after they confirm; never accept on the
+  user's behalf. Without it the API can answer 400
+  `terms_acceptance_required`.
 
   ```bash
   curl -X POST https://api.acuris-geo.com/dev-key \
     -H 'Content-Type: application/json' \
-    -d '{"email":"you@example.com"}'
+    -d '{"email":"you@example.com","accept_terms":true}'
   # → {"api_key":"<token>","validation_credits":100,
   #     "geocode_credits":100,"expires_at":"...","tier":"dev",...}
   export ACURIS_API_KEY=<api_key>

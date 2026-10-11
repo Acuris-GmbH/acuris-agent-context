@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- **`POST /dev-key` takes `"accept_terms": true`.** The curl examples
+  send it, and the skill now tells the agent to show the user the Terms
+  of Service (https://api.acuris-geo.com/legal/terms) and the UK PAF
+  Evaluation Terms (https://api.acuris-geo.com/legal/uk-evaluation-terms)
+  and get their confirmation before requesting a key. Documents the 400
+  `terms_acceptance_required` answer.
+
 ## 0.2.3 — 2026-07-19
 
 - **UK (`gbr`) is now fully supported — corrected outdated guidance.**

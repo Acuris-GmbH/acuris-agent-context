@@ -32,12 +32,19 @@ Two self-service paths:
 | `POST /dev-key`                          | AI-skill / SDK evaluation             | 100 validations + 100 geocodes, 7 days; 1/email/day. |
 | `POST /register` (web form at `/register`) | Full trial, paid plan onboarding    | 1000 validations + 1000 geocodes, 28 days.          |
 
-`POST /dev-key` is one step and returns the key in the response body:
+`POST /dev-key` is one step and returns the key in the response body.
+`"accept_terms": true` states that the user agrees to the Acuris Geo
+[Terms of Service](https://api.acuris-geo.com/legal/terms) and the
+[UK PAF Evaluation Terms](https://api.acuris-geo.com/legal/uk-evaluation-terms).
+An agent must show the user both links and get their confirmation
+before sending it. When acceptance is enforced, a request without it
+returns 400 `{"error": "terms_acceptance_required", "terms_url": ...,
+"uk_evaluation_terms_url": ...}`.
 
 ```bash
 curl -X POST https://api.acuris-geo.com/dev-key \
   -H 'Content-Type: application/json' \
-  -d '{"email":"you@example.com"}'
+  -d '{"email":"you@example.com","accept_terms":true}'
 ```
 
 Response:
