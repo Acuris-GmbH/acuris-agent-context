@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Autocomplete country list brought up to date (22 countries, was 7).** `AUTOCOMPLETE_COUNTRIES` now matches what `/suggest` serves, including Iceland (`isl`). `fra`, `esp`, `ita`, `nor`, `dnk`, `aut`, `che`, `bel`, `prt`, `sgp`, `can` moved from "validation only" to the autocomplete set.
 - **`POST /dev-key` takes `"accept_terms": true`.** The curl examples
   send it, and the skill now tells the agent to show the user the Terms
   of Service (https://api.acuris-geo.com/legal/terms) and the UK PAF

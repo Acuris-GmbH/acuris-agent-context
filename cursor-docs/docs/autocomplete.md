@@ -7,7 +7,7 @@ title: "Autocomplete"
 
 ## ⚠️ Country coverage for autocomplete is narrower than for validation
 
-**Only 7 countries currently have `/suggest` (autocomplete) wired:**
+**Only a limited set of countries (22 today) have `/suggest` (autocomplete) wired:**
 
 ```ts
 const AUTOCOMPLETE_COUNTRIES = [
@@ -18,6 +18,21 @@ const AUTOCOMPLETE_COUNTRIES = [
   { code: "fin", label: "Finland" },
   { code: "swe", label: "Sweden" },
   { code: "jpn", label: "Japan" },
+  { code: "aut", label: "Austria" },
+  { code: "bel", label: "Belgium" },
+  { code: "can", label: "Canada" },
+  { code: "che", label: "Switzerland" },
+  { code: "dnk", label: "Denmark" },
+  { code: "esp", label: "Spain" },
+  { code: "fra", label: "France" },
+  { code: "hkg", label: "Hong Kong" },
+  { code: "irl", label: "Ireland" },
+  { code: "isl", label: "Iceland" },
+  { code: "ita", label: "Italy" },
+  { code: "lux", label: "Luxembourg" },
+  { code: "nor", label: "Norway" },
+  { code: "prt", label: "Portugal" },
+  { code: "sgp", label: "Singapore" },
 ];
 ```
 
@@ -28,13 +43,13 @@ countries' `/suggest` calls return `[]` silently, which reads as
 "the product is broken" to the user.
 
 **Use this exact list in any autocomplete country picker.** Don't add
-`fra`, `esp`, `ita`, etc. — they'll appear in the dropdown but
+countries that are not in it (`aus`, `bra`, `mex`, `nzl`, ...) — they'll appear in the dropdown but
 typing into the input will produce no suggestions. That's the worst
 possible UX.
 
 If you're building a form that *also* validates on submit (a checkout
 flow with `<AcurisAddressInput>` for typing + `<AcurisAddressValidator>`
-for submit), the autocomplete-enabled 7 are still the right set —
+for submit), the autocomplete-enabled countries are still the right set —
 they're a strict subset of the validation-enabled set, so validation
 works for all of them.
 

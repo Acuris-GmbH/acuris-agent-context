@@ -218,7 +218,7 @@ Avoid them.
    `/geocode` / `/reverse` cover different country sets.** Validation
    and geocoding work against 200+ ISO-3 codes; autocomplete requires
    per-country NORM columns + indexes (a separate engineering step)
-   and currently runs for only 7 countries:
+   and currently runs for a limited set of countries (22 today):
 
    ```ts
    // The ONLY countries with /suggest wired:
@@ -230,10 +230,25 @@ Avoid them.
      { code: "fin", label: "Finland" },
      { code: "swe", label: "Sweden" },
      { code: "jpn", label: "Japan" },
+     { code: "aut", label: "Austria" },
+     { code: "bel", label: "Belgium" },
+     { code: "can", label: "Canada" },
+     { code: "che", label: "Switzerland" },
+     { code: "dnk", label: "Denmark" },
+     { code: "esp", label: "Spain" },
+     { code: "fra", label: "France" },
+     { code: "hkg", label: "Hong Kong" },
+     { code: "irl", label: "Ireland" },
+     { code: "isl", label: "Iceland" },
+     { code: "ita", label: "Italy" },
+     { code: "lux", label: "Luxembourg" },
+     { code: "nor", label: "Norway" },
+     { code: "prt", label: "Portugal" },
+     { code: "sgp", label: "Singapore" },
    ];
    ```
 
-   Listing `fra`, `esp`, `ita`, etc. in an **autocomplete** picker is
+   Listing a country that is not in that list (for example `aus`, `bra`, `mex`, `nzl`) in an **autocomplete** picker is
    actively worse than omitting them — the user types and nothing
    happens, which reads as "the product is broken." `/suggest` returns
    `[]` silently for those countries.
@@ -246,40 +261,44 @@ Avoid them.
    const VALIDATION_COUNTRIES = [
      // Autocomplete-enabled subset:
      { code: "usa", label: "United States" },
-     { code: "gbr", label: "United Kingdom" },
+     { code: "gbr", label: "United Kingdom" },  // Royal Mail PAF (street-based)
      { code: "deu", label: "Germany" },
      { code: "nld", label: "Netherlands" },
      { code: "fin", label: "Finland" },
      { code: "swe", label: "Sweden" },
      { code: "jpn", label: "Japan" },
-     // Validation/geocoding-only (NOT autocomplete):
-     { code: "fra", label: "France" },
-     { code: "esp", label: "Spain" },
-     { code: "ita", label: "Italy" },
-     { code: "nor", label: "Norway" },
-     { code: "dnk", label: "Denmark" },
      { code: "aut", label: "Austria" },
-     { code: "che", label: "Switzerland" },
      { code: "bel", label: "Belgium" },
+     { code: "can", label: "Canada" },
+     { code: "che", label: "Switzerland" },
+     { code: "dnk", label: "Denmark" },
+     { code: "esp", label: "Spain" },
+     { code: "fra", label: "France" },
+     { code: "hkg", label: "Hong Kong" },
+     { code: "irl", label: "Ireland" },
+     { code: "isl", label: "Iceland" },
+     { code: "ita", label: "Italy" },
+     { code: "lux", label: "Luxembourg" },
+     { code: "nor", label: "Norway" },
      { code: "prt", label: "Portugal" },
+     { code: "sgp", label: "Singapore" },
+     // Validation/geocoding-only (NOT autocomplete):
      { code: "aus", label: "Australia" },
      { code: "nzl", label: "New Zealand" },
-     { code: "sgp", label: "Singapore" },
      { code: "bra", label: "Brazil" },
      { code: "mex", label: "Mexico" },
-     { code: "can", label: "Canada" },
    ];
    ```
 
    **Rules of thumb:**
    - If the UI uses `<AcurisAddressInput>` (typeahead): use
-     `AUTOCOMPLETE_COUNTRIES` (the 7).
+     `AUTOCOMPLETE_COUNTRIES`.
    - If the UI uses `<AcurisAddressValidator>` or any structured form
      that hits `/validate` / `/geocode` / `/reverse`: either list is
      fine.
    - Mixed (autocomplete + validation in the same form, same country
      picker): use `AUTOCOMPLETE_COUNTRIES`. The validation set is a
-     superset; user can still validate any of those 7.
+     superset; user can still validate any of those countries.
 
    The autocomplete-enabled set grows as new countries get NORM
    columns. If this list looks stale, ask before extending it.
