@@ -139,9 +139,10 @@ When the user hasn't specified otherwise, prefer these:
   The dev key is capped at 100 validations + 100 geocodes over 7 days
   (rate-limited 1 issuance per email per day, 1 per IP per day). It
   works on every endpoint — `/validate`, `/geocode`, `/reverse`,
-  `/suggest`. For more headroom, run the full 28-day trial at
-  `https://api.acuris-geo.com/register` (1000 validations + 1000
-  geocodes). For production, see `https://acuris-geo.com/acuris-pricing/`.
+  `/suggest`. For more headroom, register for the free evaluation at
+  `https://api.acuris-geo.com/register` (1,000 lookups, valid 30 days,
+  no daily limit; ends with HTTP 402 `evaluation_ended`). For production,
+  see `https://acuris-geo.com/acuris-pricing/`.
 - **Server-side calls.** The SDK is for Node / edge / server runtimes.
   In a browser app, route through your own backend (Next.js API route,
   Express handler, Cloudflare Worker — see

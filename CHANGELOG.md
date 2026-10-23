@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- **Registered free key is now a free evaluation** (1,000 lookups across validate / geocode / reverse / suggest picks, valid 30 days, no daily limit; HTTP 402 `evaluation_ended` when used up). Replaces the old "1000 validations + 1000 geocodes, 28 days" trial wording in the key table and the dev-key paragraph.
 - **Autocomplete country list brought up to date (22 countries, was 7).** `AUTOCOMPLETE_COUNTRIES` now matches what `/suggest` serves, including Iceland (`isl`). `fra`, `esp`, `ita`, `nor`, `dnk`, `aut`, `che`, `bel`, `prt`, `sgp`, `can` moved from "validation only" to the autocomplete set.
 - **`POST /dev-key` takes `"accept_terms": true`.** The curl examples
   send it, and the skill now tells the agent to show the user the Terms

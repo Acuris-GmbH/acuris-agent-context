@@ -30,7 +30,7 @@ Two self-service paths:
 | Endpoint                                 | Best for                              | Caps                                                |
 | ---------------------------------------- | ------------------------------------- | --------------------------------------------------- |
 | `POST /dev-key`                          | AI-skill / SDK evaluation             | 100 validations + 100 geocodes, 7 days; 1/email/day. |
-| `POST /register` (web form at `/register`) | Full trial, paid plan onboarding    | 1000 validations + 1000 geocodes, 28 days.          |
+| `POST /register` (web form at `/register`) | Free evaluation, paid plan onboarding | 1,000 lookups (validate, geocode, reverse, suggest picks), valid 30 days, no daily limit. |
 
 `POST /dev-key` is one step and returns the key in the response body.
 `"accept_terms": true` states that the user agrees to the Acuris Geo
